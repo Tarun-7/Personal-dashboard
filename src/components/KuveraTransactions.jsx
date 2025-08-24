@@ -1,56 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Typography } from '@mui/material';
+import { BarChart3 } from 'lucide-react';
 
+const CACHE_KEY_MARKET_VALUES = 'kuveraMarketValues';
+const CACHE_KEY_MARKET_VALUES_TIMESTAMP = 'kuveraMarketValuesTimestamp';
+const CACHE_EXPIRY_MS = 60 * 60 * 1000;
 
 const KuveraTransactions = ({ transactions = [], onTotalMarketValue }) => {
-    
-    const [pagination, setPagination] = useState({});
-    const [sortDirection, setSortDirection] = useState('desc'); // State for sorting direction
-    const [sortBy, setSortBy] = useState('totalAmount'); // State for sorting by
-    const [marketValues, setMarketValues] = useState({}); // State to hold market values
-    const [fundCodes, setFundCodes] = useState({}); // State to hold fund codes
+  
+  const [pagination, setPagination] = useState({});
+  const [sortDirection, setSortDirection] = useState('desc');
+  const [sortBy, setSortBy] = useState('totalAmount');
+  const [marketValues, setMarketValues] = useState({});
+  const [fundCodes, setFundCodes] = useState({});
 
-    useEffect(() => {
-        // Fetch fund codes from the JSON file
-        const fetchFundCodes = async () => {
-            try {
-              const response = await fetch('/data/KuveraCode.json'); // Adjust the path as necessary
-              if (!response.ok) {
-                const responseText = await response.text(); // Get the response as text
-                console.error('Error fetching JSON:', response.status, responseText);
-                throw new Error(`Network response was not ok: ${response.statusText}`);
-              }
-              const data = await response.json(); // Parse the JSON
-              setFundCodes(data);
-            } catch (error) {
-              console.error('Error fetching fund codes:', error);
-            }
-        };
-        fetchFundCodes();
-      }, []);
+  useEffect(() => {
+    // Fetch fund codes
+    const fetchFundCodes = async () => {
+      try {
+        const response = await fetch('/data/KuveraCode.json');
+        if (!response.ok) throw new Error(`Network error: ${response.statusText}`);
+        const data = await response.json();
+        setFundCodes(data);
+      } catch (error) {
+        console.error('Error fetching fund codes:', error);
+      }
+    };
+    fetchFundCodes();
+  }, []);
 
-    useEffect(() => {
-        // Fetch market values for each fund
-        const fetchMarketValues = async () => {
-            const values = {};
-            for (const [fund, code] of Object.entries(fundCodes)) {
+
+  useEffect(() => {
+    // Load cached market values if available and not expired
+    const cachedValues = localStorage.getItem(CACHE_KEY_MARKET_VALUES);
+    const cachedTimestamp = localStorage.getItem(CACHE_KEY_MARKET_VALUES_TIMESTAMP);
+    const now = Date.now();
+    const isCacheValid = cachedValues && cachedTimestamp && (now - parseInt(cachedTimestamp, 10) < CACHE_EXPIRY_MS);
+
+    if (isCacheValid) {
+      // Use cached market values
+      setMarketValues(JSON.parse(cachedValues));
+    } else if (Object.keys(fundCodes).length) {
+      // Fetch fresh market values and cache them
+      const fetchMarketValues = async () => {
+        const values = {};
+        for (const [fund, code] of Object.entries(fundCodes)) {
+          try {
             const response = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
             if (response.ok) {
-                const data = await response.json();
-                values[fund] = data.data[0].nav; // Assuming nav is the market value
+              const data = await response.json();
+              values[fund] = data.data[0].nav;
             }
-            }
-            setMarketValues(values);
-        };
-        if (Object.keys(fundCodes).length) {
-            fetchMarketValues();
+          } catch (error) {
+            console.error(`Failed to fetch market value for ${fund}`, error);
+          }
         }
-    }, [fundCodes]);
+        setMarketValues(values);
+        localStorage.setItem(CACHE_KEY_MARKET_VALUES, JSON.stringify(values));
+        localStorage.setItem(CACHE_KEY_MARKET_VALUES_TIMESTAMP, now.toString());
+      };
+      fetchMarketValues();
+    }
+  }, [fundCodes]);
     
-    if (!transactions.length)
-      return <Typography>No transactions uploaded yet.</Typography>;
-    
-      // Group by fund name (3rd column, index 2)
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <div className="bg-gray-800 p-8 rounded-lg text-center">
+          <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold mb-2">Transactions - Kuvera</h2>
+          <p className="text-gray-400">Kuvera transactions are currently unavailable. Please upload a Kuvera transactions CSV file to view here.</p>
+        </div>
+      </div>
+    );
+  }
+
+    // Group by fund name (3rd column, index 2)
     const grouped = transactions.reduce((acc, row) => {
       const fund = Object.values(row)[2] ?? "Unknown Fund";
       (acc[fund] = acc[fund] || []).push(row);
