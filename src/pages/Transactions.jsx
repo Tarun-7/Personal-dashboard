@@ -9,6 +9,7 @@ const TransactionsTab = ({
   kuveraTransactions,
   setRupeeInvestments,
   ibkrTransactions,
+  setUsdInvestments
 }) => {
 
   return (
@@ -48,6 +49,7 @@ const TransactionsTab = ({
       ) : brokerType === 'Interactive Broker' ? (
         <IbkrTransactions
           transactions={ibkrTransactions}
+          onTotalMarketValueChange={setUsdInvestments}
         />
       ) : (
         <div className="flex flex-col items-center justify-center h-96">

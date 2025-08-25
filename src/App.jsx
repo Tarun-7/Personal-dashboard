@@ -12,16 +12,7 @@ import {
   MessageSquare, 
   Settings, 
   Search, 
-  Bell, 
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Plus,
-  FileText,
-  Check,
-  IndianRupee,
-  Euro,
-  Siren
+  Bell
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -85,7 +76,7 @@ const Dashboard = () => {
   const [kuveraTransactions, setKuveraTransactions] = useState([]);
   const [ibkrTransactions, setIbkrTransactions] = useState([]);
   const [rupeeInvestments, setRupeeInvestments] = useState(0);
-  const [usdInvestments, setUsdInvestments] = useState(9000);
+  const [usdInvestments, setUsdInvestments] = useState(0);
   const [euroInvestments, setEuroInvestments] = useState(5000);
   const [netWorth, setNetWorth] = useState(0);
   const [goalAmount, setGoalAmount] = useState(10000000); // Set your goal amount here
@@ -343,6 +334,7 @@ const handleIbkrFile = (e) => {
             kuveraTransactions={kuveraTransactions}
             setRupeeInvestments={setRupeeInvestments}
             ibkrTransactions={ibkrTransactions}
+            setUsdInvestments={setUsdInvestments}
           />
         )}
 

@@ -14,54 +14,81 @@ const KuveraTransactions = ({ transactions = [], onTotalMarketValue }) => {
   const [marketValues, setMarketValues] = useState({});
   const [fundCodes, setFundCodes] = useState({});
 
-  useEffect(() => {
-    // Fetch fund codes
-    const fetchFundCodes = async () => {
-      try {
-        const response = await fetch('/data/KuveraCode.json');
-        if (!response.ok) throw new Error(`Network error: ${response.statusText}`);
-        const data = await response.json();
-        setFundCodes(data);
-      } catch (error) {
-        console.error('Error fetching fund codes:', error);
-      }
-    };
-    fetchFundCodes();
-  }, []);
-
-
-  useEffect(() => {
-    // Load cached market values if available and not expired
-    const cachedValues = localStorage.getItem(CACHE_KEY_MARKET_VALUES);
-    const cachedTimestamp = localStorage.getItem(CACHE_KEY_MARKET_VALUES_TIMESTAMP);
-    const now = Date.now();
-    const isCacheValid = cachedValues && cachedTimestamp && (now - parseInt(cachedTimestamp, 10) < CACHE_EXPIRY_MS);
-
-    if (isCacheValid) {
-      // Use cached market values
-      setMarketValues(JSON.parse(cachedValues));
-    } else if (Object.keys(fundCodes).length) {
-      // Fetch fresh market values and cache them
-      const fetchMarketValues = async () => {
-        const values = {};
-        for (const [fund, code] of Object.entries(fundCodes)) {
-          try {
-            const response = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
-            if (response.ok) {
-              const data = await response.json();
-              values[fund] = data.data[0].nav;
-            }
-          } catch (error) {
-            console.error(`Failed to fetch market value for ${fund}`, error);
-          }
-        }
-        setMarketValues(values);
-        localStorage.setItem(CACHE_KEY_MARKET_VALUES, JSON.stringify(values));
-        localStorage.setItem(CACHE_KEY_MARKET_VALUES_TIMESTAMP, now.toString());
-      };
-      fetchMarketValues();
+useEffect(() => {
+  // Fetch fund codes once on mount
+  const fetchFundCodes = async () => {
+    try {
+      const response = await fetch('/data/KuveraCode.json');
+      if (!response.ok) throw new Error(`Network error: ${response.statusText}`);
+      const data = await response.json();
+      setFundCodes(data);
+      console.log('Fund codes loaded:', data);
+    } catch (error) {
+      console.error('Error fetching fund codes:', error);
     }
-  }, [fundCodes]);
+  };
+  fetchFundCodes();
+}, []);
+
+useEffect(() => {
+  if (!fundCodes || Object.keys(fundCodes).length === 0) return;
+
+  const cachedValues = localStorage.getItem(CACHE_KEY_MARKET_VALUES);
+  const cachedTimestamp = localStorage.getItem(CACHE_KEY_MARKET_VALUES_TIMESTAMP);
+  const now = Date.now();
+  const isCacheValid =
+    cachedValues &&
+    cachedTimestamp &&
+    now - parseInt(cachedTimestamp, 10) < CACHE_EXPIRY_MS;
+
+  if (isCacheValid) {
+    setMarketValues(JSON.parse(cachedValues));
+    console.log('Using cached market values');
+    if (onTotalMarketValue) {
+      const totalValue = Object.values(JSON.parse(cachedValues)).reduce(
+        (acc, val) => acc + parseFloat(val || 0),
+        0
+      );
+      onTotalMarketValue(totalValue);
+    }
+    return;
+  }
+
+  const fetchMarketValues = async () => {
+    const values = {};
+    for (const [fund, code] of Object.entries(fundCodes)) {
+      try {
+        const response = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
+        if (response.ok) {
+          const data = await response.json();
+          const nav = data?.data?.[0]?.nav;
+          if (nav) {
+            values[fund] = parseFloat(nav);
+            console.log(`Fetched NAV for ${fund} (${code}):`, nav);
+          }
+        } else {
+          console.error(`Failed to fetch NAV for ${fund} (${code}):`, response.status);
+        }
+      } catch (error) {
+        console.error(`Error fetching NAV for ${fund} (${code}):`, error);
+      }
+    }
+    setMarketValues(values);
+    localStorage.setItem(CACHE_KEY_MARKET_VALUES, JSON.stringify(values));
+    localStorage.setItem(CACHE_KEY_MARKET_VALUES_TIMESTAMP, now.toString());
+
+    if (onTotalMarketValue) {
+      const totalValue = Object.values(values).reduce(
+        (acc, val) => acc + parseFloat(val || 0),
+        0
+      );
+      onTotalMarketValue(totalValue);
+    }
+  };
+
+  fetchMarketValues();
+}, [fundCodes, onTotalMarketValue]);
+
     
   if (!transactions || transactions.length === 0) {
     return (

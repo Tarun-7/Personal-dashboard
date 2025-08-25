@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -13,10 +12,20 @@ import {
   Typography,
   TableSortLabel,
 } from '@mui/material';
-
 import { BarChart3 } from 'lucide-react';
 
-const FINNHUB_API_KEY = '';
+const CACHE_KEY = 'ibkr_price_map';
+const CACHE_TIMESTAMP_KEY = 'ibkr_price_map_timestamp';
+const CACHE_EXPIRY_MS = 3600000; // 1 hour
+
+const FINNHUB_API_KEY = import.meta.env.VITE_FINNHUB_API_KEY;
+const ALPHA_VANTAGE_API_KEY = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY;
+
+// Debug environment variables
+console.log('Environment variables check:');
+console.log('FINNHUB_API_KEY:', FINNHUB_API_KEY ? 'Loaded ✓' : 'Missing ✗');
+console.log('ALPHA_VANTAGE_API_KEY:', ALPHA_VANTAGE_API_KEY ? 'Loaded ✓' : 'Missing ✗');
+console.log('All env vars:', import.meta.env);
 
 const sortFunctions = {
   invested: (a, b) => a.totalAmount - b.totalAmount,
@@ -26,75 +35,102 @@ const sortFunctions = {
   unrealizedGains: (a, b) => a.unrealizedGains - b.unrealizedGains,
 };
 
-const IbkrTransactions = ({ transactions = [] }) => {
+const IbkrTransactions = ({ transactions = [], onTotalMarketValueChange }) => {
   const [pagination, setPagination] = useState({});
   const [sortOrder, setSortOrder] = useState('desc');
   const [sortBy, setSortBy] = useState('invested');
   const [priceMap, setPriceMap] = useState({});
   const fetchedSymbolsRef = useRef(new Set());
+  const prevTotalMarketValue = useRef(null);
 
-  // Filter out CASH asset class
-  const filteredTransactions = transactions.filter(
-    (txn) => txn['AssetClass']?.toUpperCase() !== 'CASH'
+  // Filter out CASH asset class, memoized
+  const filteredTransactions = useMemo(
+    () => transactions.filter(txn => txn['AssetClass']?.toUpperCase() !== 'CASH'),
+    [transactions]
   );
 
-  // Fetch latest prices from Finnhub API
+  // Get unique symbols, memoized
+  const uniqueSymbols = useMemo(
+    () => [...new Set(filteredTransactions.map(txn => txn.Symbol).filter(Boolean))],
+    [filteredTransactions]
+  );
+
+  // Fetch prices effect with caching
   useEffect(() => {
-    const uniqueSymbols = [
-      ...new Set(filteredTransactions.map((txn) => txn.Symbol).filter(Boolean)),
-    ];
+    const cachedPrices = localStorage.getItem(CACHE_KEY);
+    const cachedTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+    const now = Date.now();
 
-    if (uniqueSymbols.length === 0) return;
+    if (cachedPrices && cachedTimestamp && now - Number(cachedTimestamp) < CACHE_EXPIRY_MS) {
+      const parsedPrices = JSON.parse(cachedPrices);
+      setPriceMap(parsedPrices);
+      fetchedSymbolsRef.current = new Set(Object.keys(parsedPrices));
+      return;
+    }
 
-    const newSymbols = uniqueSymbols.filter(
-      (symbol) => !fetchedSymbolsRef.current.has(symbol)
-    );
-
+    const newSymbols = uniqueSymbols.filter(sym => !fetchedSymbolsRef.current.has(sym));
     if (newSymbols.length === 0) return;
 
     const fetchPrices = async () => {
+      let newPrices = {};
       for (const symbol of newSymbols) {
         try {
-          const res = await fetch(
-            `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(
-              symbol
-            )}&token=${FINNHUB_API_KEY}`
+          const isLSEETF = filteredTransactions.some(
+            txn => txn.Symbol === symbol && txn.ListingExchange === "LSEETF"
           );
-          if (res.ok) {
-            const data = await res.json();
-            if (data && typeof data.c === 'number' && data.c > 0) {
-              setPriceMap((prev) => ({ ...prev, [symbol]: data.c }));
-            } else {
-              setPriceMap((prev) => ({ ...prev, [symbol]: 0 }));
-            }
+          let price = 0;
+          console.log(`Fetching price for ${symbol}, isLSEETF: ${isLSEETF}`);
+
+          if (isLSEETF) {
+            // Append '.LON' only if symbol is exactly 'VUAA'
+            const symbolForApi = symbol === 'VUAA' ? `${symbol}.LON` : symbol;
+
+            const apiRes = await fetch(
+                `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbolForApi)}&apikey=${ALPHA_VANTAGE_API_KEY}`
+            );
+            const apiData = await apiRes.json();
+            price = Number(apiData?.['Global Quote']?.['05. price']) || 0;
           } else {
-            setPriceMap((prev) => ({ ...prev, [symbol]: 0 }));
+            const apiRes = await fetch(
+              `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(
+                symbol
+              )}&token=${FINNHUB_API_KEY}`
+            );
+            if (apiRes.ok) {
+              const apiData = await apiRes.json();
+              console.log(`Finnhub response for ${symbol}:`, apiData);
+              price = Number(apiData?.c) || 0;
+            } else {
+              console.log(`Finnhub API error for ${symbol}:`, apiRes.status, apiRes.statusText);
+            }
           }
-        } catch (error) {
-          console.error(`Error fetching price for ${symbol}:`, error);
-          setPriceMap((prev) => ({ ...prev, [symbol]: 0 }));
-        } finally {
+
+          console.log(`Final price for ${symbol}: ${price}`);
+          newPrices[symbol] = price;
           fetchedSymbolsRef.current.add(symbol);
-          await new Promise((r) => setTimeout(r, 100)); // Rate limit delay
+          await new Promise(r => setTimeout(r, 150)); // API rate limits
+        } catch (error) {
+          console.log(`Error fetching price for ${symbol}:`, error);
+          newPrices[symbol] = 0;
+          fetchedSymbolsRef.current.add(symbol);
         }
       }
+      setPriceMap(prev => {
+        const updated = { ...prev, ...newPrices };
+        return updated;
+      });
     };
 
     fetchPrices();
-  }, [filteredTransactions.length]);
+  }, [uniqueSymbols, filteredTransactions]);
 
-  if (!filteredTransactions.length) {
-    return (
-      <Box className="flex flex-col items-center justify-center h-96">
-        <Paper className="bg-gray-800 p-8 rounded-lg text-center">
-          <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <Typography variant="h6" gutterBottom>
-            No IBKR transactions found. Please upload an IBKR CSV file.
-          </Typography>
-        </Paper>
-      </Box>
-    );
-  }
+  // Cache priceMap to localStorage whenever it updates
+  useEffect(() => {
+    if (Object.keys(priceMap).length > 0) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(priceMap));
+      localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+    }
+  }, [priceMap]);
 
   // Group transactions by symbol
   const grouped = filteredTransactions.reduce((acc, txn) => {
@@ -104,77 +140,95 @@ const IbkrTransactions = ({ transactions = [] }) => {
     return acc;
   }, {});
 
-  // Create summary rows
-  const summaryRows = Object.entries(grouped).map(([symbol, items]) => {
-    let totalQuantity = 0;
-    let totalAmount = 0;
-    let totalIbCommission = 0;
-    let realizedGains = 0;
+  // Summary rows memoized
+  const summaryRows = useMemo(() => {
+    console.log('Calculating summary rows with priceMap:', priceMap);
+    return Object.entries(grouped).map(([symbol, items]) => {
+      let totalQuantity = 0;
+      let totalAmount = 0;
+      let totalIbCommission = 0;
+      let realizedGains = 0;
 
-    items.forEach((txn) => {
-      let qty = parseFloat(txn.Quantity);
-      if (isNaN(qty)) qty = 0;
+      items.forEach(txn => {
+        const qty = parseFloat(txn.Quantity) || 0;
+        const tradeMoney = parseFloat(txn.TradeMoney) || 0;
+        const ibCommission = parseFloat(txn.IBCommission) || 0;
+        const fifoPnlRealized = parseFloat(txn.FifoPnlRealized) || 0;
 
-      let tradeMoney = parseFloat(txn.TradeMoney);
-      if (isNaN(tradeMoney)) tradeMoney = 0;
+        totalQuantity += qty;
+        totalAmount += tradeMoney;
+        totalIbCommission += ibCommission;
+        realizedGains += fifoPnlRealized;
+      });
 
-      const ibCommission = parseFloat(txn.IBCommission) || 0;
+      const marketPrice = priceMap[symbol] || 0;
+      const totalMarketValue = marketPrice * totalQuantity;
+      console.log(`Market calculation for ${symbol}:`, {
+        marketPrice,
+        totalQuantity,
+        totalMarketValue,
+      });
 
-      totalQuantity += qty;
-      totalAmount += tradeMoney;
-      totalIbCommission += ibCommission;
-      realizedGains += parseFloat(txn.FifoPnlRealized) || 0;
+      const unrealizedGains = totalMarketValue - totalIbCommission - totalAmount;
+      const description = items[0]?.Description || 'No Description';
+
+      return {
+        symbol,
+        description,
+        totalQuantity,
+        totalAmount,
+        totalMarketValue,
+        totalIbCommission,
+        realizedGains,
+        unrealizedGains,
+      };
     });
+  }, [grouped, priceMap]);
 
-    const marketPrice = priceMap[symbol] || 0;
-    const totalMarketValue = marketPrice * totalQuantity;
+  // Calculate totals memoized
+  const totals = useMemo(() => {
+    return summaryRows.reduce(
+      (acc, row) => {
+        acc.totalAmount += row.totalAmount;
+        acc.totalMarketValue += row.totalMarketValue;
+        acc.totalIbCommission += row.totalIbCommission;
+        acc.realizedGains += row.realizedGains;
+        acc.unrealizedGains += row.unrealizedGains;
+        return acc;
+      },
+      {
+        totalAmount: 0,
+        totalMarketValue: 0,
+        totalIbCommission: 0,
+        realizedGains: 0,
+        unrealizedGains: 0,
+      }
+    );
+  }, [summaryRows]);
 
-    // Unrealized Gains = Market Value - Fees - Invested Amount
-    const unrealizedGains = totalMarketValue - totalIbCommission - totalAmount;
-
-    const description = items[0]?.Description || 'No Description';
-
-    return {
-      symbol,
-      description,
-      totalQuantity,
-      totalAmount,
-      totalMarketValue,
-      totalIbCommission,
-      realizedGains,
-      unrealizedGains,
-    };
-  });
-
-  // Calculate totals for numeric columns except quantity
-  const totals = summaryRows.reduce(
-    (acc, row) => {
-      acc.totalAmount += row.totalAmount;
-      acc.totalMarketValue += row.totalMarketValue;
-      acc.totalIbCommission += row.totalIbCommission;
-      acc.realizedGains += row.realizedGains;
-      acc.unrealizedGains += row.unrealizedGains;
-      return acc;
-    },
-    {
-      totalAmount: 0,
-      totalMarketValue: 0,
-      totalIbCommission: 0,
-      realizedGains: 0,
-      unrealizedGains: 0,
+  // Effect to notify parent on total market value change, only if it changed
+  useEffect(() => {
+    if (
+      onTotalMarketValueChange &&
+      totals.totalMarketValue !== prevTotalMarketValue.current
+    ) {
+      onTotalMarketValueChange(totals.totalMarketValue);
+      prevTotalMarketValue.current = totals.totalMarketValue;
     }
-  );
+  }, [totals.totalMarketValue, onTotalMarketValueChange]);
 
-  // Sort summary rows by selected column and order
-  const sortedSummaryRows = summaryRows.sort((a, b) => {
+  // Sort summary rows memoized
+  const sortedSummaryRows = useMemo(() => {
     const fn = sortFunctions[sortBy];
-    if (!fn) return 0;
-    const res = fn(a, b);
-    return sortOrder === 'asc' ? res : -res;
-  });
+    if (!fn) return summaryRows;
+    return [...summaryRows].sort((a, b) => {
+      const result = fn(a, b);
+      return sortOrder === 'asc' ? result : -result;
+    });
+  }, [summaryRows, sortBy, sortOrder]);
 
   // Sorting handler
-  const handleSort = (column) => {
+  const handleSort = column => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -182,6 +236,19 @@ const IbkrTransactions = ({ transactions = [] }) => {
       setSortOrder('desc');
     }
   };
+
+  if (!filteredTransactions.length) {
+    return (
+      <Box className="flex flex-col items-center justify-center min-h-[300px]">
+        <Paper className="bg-gray-800 p-8 rounded-lg text-center">
+          <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <Typography variant="h6" gutterBottom>
+            No IBKR transactions found. Please upload an IBKR CSV file.
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -193,7 +260,7 @@ const IbkrTransactions = ({ transactions = [] }) => {
       p={2}
     >
       <Typography variant="h5" mb={2}>
-        Transactions Summary by Symbol (USD, Finnhub prices)
+        Transactions Summary by Symbol (USD, Finnhub & Alpha Vantage prices)
       </Typography>
 
       <TableContainer
@@ -203,60 +270,96 @@ const IbkrTransactions = ({ transactions = [] }) => {
         <Table sx={{ '& td, & th': { color: '#fff' } }}>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#1a202c' }}>
-              <TableCell style={{ color: '#fff' }}><strong>Symbol</strong></TableCell>
-              <TableCell style={{ color: '#fff' }}><strong>Description</strong></TableCell>
-              <TableCell style={{ color: '#fff' }} align="right"><strong>Quantity</strong></TableCell>
-
-              <TableCell style={{ color: '#fff' }} align="right" sortDirection={sortBy === 'invested' ? sortOrder : false}>
+              <TableCell>
+                <strong>Symbol</strong>
+              </TableCell>
+              <TableCell>
+                <strong>Description</strong>
+              </TableCell>
+              <TableCell align="right">
+                <strong>Quantity</strong>
+              </TableCell>
+              <TableCell
+                align="right"
+                sortDirection={sortBy === 'invested' ? sortOrder : false}
+              >
                 <TableSortLabel
                   active={sortBy === 'invested'}
                   direction={sortBy === 'invested' ? sortOrder : 'asc'}
                   onClick={() => handleSort('invested')}
-                  sx={{ color: '#fff' }}
+                  sx={{
+                    color: '#fff',
+                    '&:hover': { color: '#fff' },
+                    '& .MuiTableSortLabel-icon': { color: '#fff !important' },
+                  }}
                 >
                   Invested $
                 </TableSortLabel>
               </TableCell>
-
-              <TableCell style={{ color: '#fff' }} align="right" sortDirection={sortBy === 'marketValue' ? sortOrder : false}>
+              <TableCell
+                align="right"
+                sortDirection={sortBy === 'marketValue' ? sortOrder : false}
+              >
                 <TableSortLabel
                   active={sortBy === 'marketValue'}
                   direction={sortBy === 'marketValue' ? sortOrder : 'asc'}
                   onClick={() => handleSort('marketValue')}
-                  sx={{ color: '#fff' }}
+                  sx={{
+                    color: '#fff',
+                    '&:hover': { color: '#fff' },
+                    '& .MuiTableSortLabel-icon': { color: '#fff !important' },
+                  }}
                 >
                   Market Value $
                 </TableSortLabel>
               </TableCell>
-
-              <TableCell style={{ color: '#fff' }} align="right" sortDirection={sortBy === 'ibkrFees' ? sortOrder : false}>
+              <TableCell
+                align="right"
+                sortDirection={sortBy === 'ibkrFees' ? sortOrder : false}
+              >
                 <TableSortLabel
                   active={sortBy === 'ibkrFees'}
                   direction={sortBy === 'ibkrFees' ? sortOrder : 'asc'}
                   onClick={() => handleSort('ibkrFees')}
-                  sx={{ color: '#fff' }}
+                  sx={{
+                    color: '#fff',
+                    '&:hover': { color: '#fff' },
+                    '& .MuiTableSortLabel-icon': { color: '#fff !important' },
+                  }}
                 >
                   IBKR Fees $
                 </TableSortLabel>
               </TableCell>
-
-              <TableCell style={{ color: '#fff' }} align="right" sortDirection={sortBy === 'realizedGains' ? sortOrder : false}>
+              <TableCell
+                align="right"
+                sortDirection={sortBy === 'realizedGains' ? sortOrder : false}
+              >
                 <TableSortLabel
                   active={sortBy === 'realizedGains'}
                   direction={sortBy === 'realizedGains' ? sortOrder : 'asc'}
                   onClick={() => handleSort('realizedGains')}
-                  sx={{ color: '#fff' }}
+                  sx={{
+                    color: '#fff',
+                    '&:hover': { color: '#fff' },
+                    '& .MuiTableSortLabel-icon': { color: '#fff !important' },
+                  }}
                 >
                   Realized Gains $
                 </TableSortLabel>
               </TableCell>
-
-              <TableCell style={{ color: '#fff' }} align="right" sortDirection={sortBy === 'unrealizedGains' ? sortOrder : false}>
+              <TableCell
+                align="right"
+                sortDirection={sortBy === 'unrealizedGains' ? sortOrder : false}
+              >
                 <TableSortLabel
                   active={sortBy === 'unrealizedGains'}
                   direction={sortBy === 'unrealizedGains' ? sortOrder : 'asc'}
                   onClick={() => handleSort('unrealizedGains')}
-                  sx={{ color: '#fff' }}
+                  sx={{
+                    color: '#fff',
+                    '&:hover': { color: '#fff' },
+                    '& .MuiTableSortLabel-icon': { color: '#fff !important' },
+                  }}
                 >
                   Unrealized Gains $
                 </TableSortLabel>
@@ -269,26 +372,43 @@ const IbkrTransactions = ({ transactions = [] }) => {
                 key={row.symbol}
                 sx={{ backgroundColor: idx % 2 === 0 ? '#23272f' : '#1a202c', color: '#fff' }}
               >
-                <TableCell sx={{ color: '#fff' }}>{row.symbol}</TableCell>
-                <TableCell sx={{ color: '#fff' }}>{row.description}</TableCell>
-                <TableCell sx={{ color: '#fff' }} align="right">{row.totalQuantity.toFixed(4)}</TableCell>
-                <TableCell sx={{ color: '#fff' }} align="right">${row.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                <TableCell sx={{ color: '#fff' }} align="right">${row.totalMarketValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                <TableCell sx={{ color: '#fff' }} align="right">${Math.abs(row.totalIbCommission).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                <TableCell sx={{ color: '#fff' }} align="right">${row.realizedGains.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                <TableCell sx={{ color: '#fff' }} align="right">${row.unrealizedGains.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                <TableCell>{row.symbol}</TableCell>
+                <TableCell>{row.description}</TableCell>
+                <TableCell align="right">{row.totalQuantity.toFixed(4)}</TableCell>
+                <TableCell align="right">
+                  ${row.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </TableCell>
+                <TableCell align="right">
+                  ${row.totalMarketValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </TableCell>
+                <TableCell align="right">
+                  ${Math.abs(row.totalIbCommission).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </TableCell>
+                <TableCell align="right">
+                  ${row.realizedGains.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </TableCell>
+                <TableCell align="right">
+                  ${row.unrealizedGains.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </TableCell>
               </TableRow>
             ))}
-
-            {/* Totals row */}
             <TableRow sx={{ backgroundColor: '#1a202c', fontWeight: 'bold', color: '#fff' }}>
-              <TableCell colSpan={2}>Totals</TableCell>
-              <TableCell align="right">-</TableCell>
-              <TableCell align="right">${totals.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell align="right">${totals.totalMarketValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell align="right">${Math.abs(totals.totalIbCommission).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell align="right">${totals.realizedGains.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell align="right">${totals.unrealizedGains.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell colSpan={3}>Totals</TableCell>
+              <TableCell align="right">
+                ${totals.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </TableCell>
+              <TableCell align="right">
+                ${totals.totalMarketValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </TableCell>
+              <TableCell align="right">
+                ${Math.abs(totals.totalIbCommission).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </TableCell>
+              <TableCell align="right">
+                ${totals.realizedGains.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </TableCell>
+              <TableCell align="right">
+                ${totals.unrealizedGains.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>
