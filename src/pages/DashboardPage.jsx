@@ -24,6 +24,7 @@ const Dashboard = ({
   return (
     <>
       {/* Net Worth Card */}
+      {usdInrRate !== null && euroInrRate !== null ? (
       <NetWorthWithGoal
         netWorth={netWorth}
         netWorthCurrency={netWorthCurrency}
@@ -35,6 +36,9 @@ const Dashboard = ({
         euroInrRate={euroInrRate}
         getGoalAmountInCurrency={getGoalAmountInCurrency}
       />
+          ) : (
+      <div>Loading currency rates...</div>
+    )}
 
       {/* Investment Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

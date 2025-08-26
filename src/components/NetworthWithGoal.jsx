@@ -1,5 +1,6 @@
 import React from 'react';
 import { IndianRupee, DollarSign, Euro, TrendingUp } from 'lucide-react';
+import GoalProgress from './GoalProgress';
 
 const NetWorthWithGoal = ({
   netWorth,
@@ -20,9 +21,12 @@ const NetWorthWithGoal = ({
   if (goalInCurrency > 0) {
     progress = Math.min(1, netWorth / goalInCurrency);
   }
-  const percent = Math.floor(progress * 100);
-  const r = 85;
-  const circumference = 2 * Math.PI * r;
+
+  let symbolForYourCurrency = '₹'; // default
+
+  if (netWorthCurrency === 'INR') symbolForYourCurrency = '₹';
+  else if (netWorthCurrency === 'USD') symbolForYourCurrency = '$';
+  else if (netWorthCurrency === 'EUR') symbolForYourCurrency = '€';
 
   return (
     <div className="flex flex-col md:flex-row gap-6 mb-6">
@@ -90,120 +94,22 @@ const NetWorthWithGoal = ({
       </div>
 
       {/* Goal Circle - Right Half */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <svg width="200" height="200" viewBox="0 0 200 200" className="mb-2">
-            {/* Background circle */}
-            <circle
-              cx="100"
-              cy="100"
-              r={r}
-              stroke="#2d3748"
-              strokeWidth="20"
-              fill="none"
-            />
-            {/* INR arc */}
-            {rupeeInvestments > 0 && (
-              <circle
-                cx="100"
-                cy="100"
-                r={r}
-                stroke="url(#inrGradient)"
-                strokeWidth="20"
-                fill="none"
-                strokeDasharray={circumference}
-                strokeDashoffset={
-                  circumference * (1 - Math.min(1, rupeeInvestments / goalInCurrency))
-                }
-                strokeLinecap="round"
-                style={{
-                  transition: 'stroke-dashoffset 1s',
-                  zIndex: 3,
-                }}
-              />
-            )}
-            {/* USD arc */}
-            {usdInvestments > 0 && (
-              <circle
-                cx="100"
-                cy="100"
-                r={r}
-                stroke="url(#usdGradient)"
-                strokeWidth="20"
-                fill="none"
-                strokeDasharray={circumference}
-                strokeDashoffset={
-                  circumference * (1 -
-                    Math.min(1, (rupeeInvestments + usdInvestments * usdInrRate) / goalInCurrency)
-                  )
-                }
-                style={{
-                  transition: 'stroke-dashoffset 1s',
-                  zIndex: 2,
-                }}
-                strokeLinecap="round"
-              />
-            )}
-            {/* EUR arc */}
-            {euroInvestments > 0 && (
-              <circle
-                cx="100"
-                cy="100"
-                r={r}
-                stroke="url(#eurGradient)"
-                strokeWidth="20"
-                fill="none"
-                strokeDasharray={circumference}
-                strokeDashoffset={
-                  circumference * (1 -
-                    Math.min(
-                      1,
-                      (rupeeInvestments + usdInvestments * usdInrRate + euroInvestments * euroInrRate) / goalInCurrency
-                    )
-                  )
-                }
-                style={{
-                  transition: 'stroke-dashoffset 1s',
-                  zIndex: 1,
-                }}
-                strokeLinecap="round"
-              />
-            )}
-            <defs>
-              <linearGradient id="inrGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#2563eb" />
-                <stop offset="100%" stopColor="#1e40af" />
-              </linearGradient>
-              <linearGradient id="usdGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#fbbf24" />
-                <stop offset="100%" stopColor="#f59e42" />
-              </linearGradient>
-              <linearGradient id="eurGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#ec4899" />
-                <stop offset="100%" stopColor="#8b5cf6" />
-              </linearGradient>
-            </defs>
-            <text
-              x="100"
-              y="100"
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize="2.5rem"
-              fontWeight="bold"
-              fill="#fff"
-            >
-              {percent}%
-            </text>
-          </svg>
-          <div className="text-white text-xl font-semibold">Goal</div>
-          <div className="text-green-200 text-lg font-bold">
-            {netWorthCurrency === 'INR'
-              ? `₹${goalInCurrency.toLocaleString('en-IN')}`
-              : netWorthCurrency === 'USD'
-                ? `$${goalInCurrency.toLocaleString('en-US')}`
-                : `€${goalInCurrency.toLocaleString('en-US')}`}
-          </div>
-        </div>
+      {/* GoalProgress component */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        { usdInrRate && euroInrRate ? (
+          <GoalProgress
+            netWorth={netWorth}
+            usdInvestments={usdInvestments}
+            rupeeInvestments={rupeeInvestments}
+            euroInvestments={euroInvestments}
+            goalAmount={goalInCurrency} // converted goal in INR or base currency
+            usdInrRate={usdInrRate}
+            euroInrRate={euroInrRate}
+            netWorthCurrencySymbol={symbolForYourCurrency}
+          />
+        ) : (
+          <div>Loading currency rates...</div>
+        )}
       </div>
     </div>
   );

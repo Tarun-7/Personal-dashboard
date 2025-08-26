@@ -4,6 +4,7 @@ import KuveraTransactions from './components/KuveraTransactions';
 import TransactionsTab from './pages/Transactions';
 import DashboardPage from './pages/DashboardPage';
 import UploadTab from './pages/UploadPage';
+import LiabilitiesPage from './pages/LiabilitiesPage';
 import { 
   Home, 
   CreditCard, 
@@ -12,7 +13,8 @@ import {
   MessageSquare, 
   Settings, 
   Search, 
-  Bell
+  Bell,
+  Siren
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -60,7 +62,7 @@ const Dashboard = () => {
     { name: 'Transactions', icon: BarChart3 },
     { name: 'Upload', icon: CreditCard },
     { name: 'Analytics', icon: BarChart3 },
-    { name: 'Personal', icon: User },
+    { name: 'Liabilities', icon: Siren },
     { name: 'Message', icon: MessageSquare },
     { name: 'Setting', icon: Settings }
   ];
@@ -77,11 +79,11 @@ const Dashboard = () => {
   const [ibkrTransactions, setIbkrTransactions] = useState([]);
   const [rupeeInvestments, setRupeeInvestments] = useState(0);
   const [usdInvestments, setUsdInvestments] = useState(0);
-  const [euroInvestments, setEuroInvestments] = useState(5000);
+  const [euroInvestments, setEuroInvestments] = useState(7000);
   const [netWorth, setNetWorth] = useState(0);
   const [goalAmount, setGoalAmount] = useState(10000000); // Set your goal amount here
-  const [usdInrRate, setUsdInrRate] = useState(0);
-  const [euroInrRate, setEuroInrRate] = useState(0);
+  const [usdInrRate, setUsdInrRate] = useState(null);
+  const [euroInrRate, setEuroInrRate] = useState(null);
   const [netWorthCurrency, setNetWorthCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
   const [goalCurrency, setGoalCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
 
@@ -95,6 +97,8 @@ const Dashboard = () => {
         }
         if (data && data.rates && data.rates.EUR) {
           setEuroInrRate(1 / data.rates.EUR);
+          console.log("EUR to INR Rate:", 1 / data.rates.EUR);
+          console.log("Euro Investments (INR):", euroInvestments);
         }
       })
       .catch(() => {});
@@ -252,6 +256,20 @@ const handleIbkrFile = (e) => {
   reader.readAsText(selectedFile);
 };
 
+// Liabilities
+const [liabilities, setLiabilities] = useState([]);
+
+// Calculate total liabilities in dashboard currency
+const totalLiabilities = liabilities.reduce((sum, l) => {
+  if (netWorthCurrency === l.currency) return sum + l.amount;
+  if (l.currency === 'USD' && netWorthCurrency === 'INR' && usdInrRate)
+    return sum + l.amount * usdInrRate;
+  if (l.currency === 'INR' && netWorthCurrency === 'USD' && usdInrRate)
+    return sum + l.amount / usdInrRate;
+  // For more currencies, extend as needed.
+  return sum;
+}, 0);
+
 
 
   const payments = [
@@ -347,6 +365,12 @@ const handleIbkrFile = (e) => {
           />
         )}
 
+
+        {/* Liabilities Page */}
+        {activeTab === 'Liabilities' && (
+          <LiabilitiesPage liabilities={liabilities} setLiabilities={setLiabilities} />
+        )}
+
         {/* Analytics Page */}
         {activeTab === 'Analytics' && (
           <div className="flex flex-col items-center justify-center h-96">
@@ -354,17 +378,6 @@ const handleIbkrFile = (e) => {
               <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h2 className="text-2xl font-semibold mb-2">Analytics</h2>
               <p className="text-gray-400">Advanced analytics will be available here</p>
-            </div>
-          </div>
-        )}
-
-        {/* Personal Page */}
-        {activeTab === 'Personal' && (
-          <div className="flex flex-col items-center justify-center h-96">
-            <div className="bg-gray-800 p-8 rounded-lg text-center">
-              <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Personal</h2>
-              <p className="text-gray-400">Personal settings will be available here</p>
             </div>
           </div>
         )}
