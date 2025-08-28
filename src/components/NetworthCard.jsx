@@ -1,8 +1,10 @@
 import React from 'react';
 import { IndianRupee, DollarSign, Euro, TrendingUp } from 'lucide-react';
 import GoalProgress from './GoalProgress';
+import { ResponsiveContainer, AreaChart, Area, XAxis, CartesianGrid } from "recharts";
 
-const NetWorthWithGoal = ({
+
+const NetWorthCard = ({
   netWorth,
   netWorthCurrency,
   setNetWorthCurrency,
@@ -13,6 +15,21 @@ const NetWorthWithGoal = ({
   euroInrRate,
   getGoalAmountInCurrency,
 }) => {
+
+  const chartData = [
+  { label: "Jan", value: 200 },
+  { label: "Feb", value: 450 },
+  { label: "Mar", value: 300 },
+  { label: "Apr", value: 900 },
+  { label: "May", value: 350 },
+  { label: "Jun", value: 800 },
+  { label: "Jul", value: 300 },
+  { label: "Aug", value: 700 },
+  { label: "Sep", value: 1000},
+  { label: "Oct", value: 1500},
+  { label: "Nov", value: 1800},
+  { label: "Dec", value: 2500},
+];
   
   const goalInCurrency = getGoalAmountInCurrency();
 
@@ -91,6 +108,32 @@ const NetWorthWithGoal = ({
           <TrendingUp className="w-4 h-4 text-green-500 mr-2" />
           <span className="text-green-500 text-sm font-medium">+12.5% from last month</span>
         </div>
+        <div style={{ width: '100%', height: 120 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={chartData}
+              margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid vertical={false} stroke="transparent" />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#888", fontSize: 12 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#FC7908"
+                strokeWidth={2}
+                fill="#FC7908"
+                fillOpacity={0.25}
+                dot={false}
+                activeDot={{ r: 6 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Goal Circle - Right Half */}
@@ -115,4 +158,4 @@ const NetWorthWithGoal = ({
   );
 };
 
-export default NetWorthWithGoal;
+export default NetWorthCard;
