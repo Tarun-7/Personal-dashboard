@@ -5,6 +5,9 @@ import TransactionsTab from './pages/Transactions';
 import DashboardPage from './pages/DashboardPage';
 import UploadTab from './pages/UploadPage';
 import LiabilitiesPage from './pages/LiabilitiesPage';
+import GoalsPage from './pages/GoalsPage';
+import Sidebar from './components/Sidebar';
+
 import { 
   Home, 
   CreditCard, 
@@ -14,7 +17,8 @@ import {
   Settings, 
   Search, 
   Bell,
-  Siren
+  Siren,
+  Goal
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -57,15 +61,6 @@ const Dashboard = () => {
     { month: 'Dec', earning: 6, spent: 2 }
   ];
 
-  const sidebarItems = [
-    { name: 'Dashboard', icon: Home },
-    { name: 'Transactions', icon: BarChart3 },
-    { name: 'Upload', icon: CreditCard },
-    { name: 'Analytics', icon: BarChart3 },
-    { name: 'Liabilities', icon: Siren },
-    { name: 'Message', icon: MessageSquare },
-    { name: 'Setting', icon: Settings }
-  ];
 
   const transactions = [
     { name: 'Mathews Ferreira', amount: '+$54.00', time: '11:20 AM', avatar: '👤', type: 'positive' },
@@ -282,29 +277,8 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Sidebar */}
-      <div className="w-64 bg-gray-800 p-6">
-        <div className="flex items-center mb-8">
-          <div className="w-8 h-8 bg-green-500 rounded mr-3"></div>
-          <span className="text-xl font-semibold">FIRE</span>
-        </div>
-        
-        <nav>
-          {sidebarItems.map((item) => (
-            <div
-              key={item.name}
-              className={`flex items-center p-3 rounded-lg mb-2 cursor-pointer transition-colors ${
-                item.name === activeTab 
-                  ? 'bg-green-500 text-white' 
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
-              onClick={() => setActiveTab(item.name)}
-            >
-              <item.icon className="w-5 h-5 mr-3" />
-              <span>{item.name}</span>
-            </div>
-          ))}
-        </nav>
-      </div>
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+
 
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-auto">
@@ -382,16 +356,9 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
           </div>
         )}
 
-        {/* Message Page */}
-        {activeTab === 'Message' && (
-          <div className="flex flex-col items-center justify-center h-96">
-            <div className="bg-gray-800 p-8 rounded-lg text-center">
-              <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Messages</h2>
-              <p className="text-gray-400">Message center will be available here</p>
-            </div>
-          </div>
-        )}
+        {/* Goal Page */}
+        {activeTab === "Goals" && <GoalsPage />}
+
 
         {/* Setting Page */}
         {activeTab === 'Setting' && (
