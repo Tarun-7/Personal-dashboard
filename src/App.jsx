@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import './app.css'
-import KuveraTransactions from './components/KuveraTransactions';
 import TransactionsTab from './pages/Transactions';
 import DashboardPage from './pages/DashboardPage';
 import UploadTab from './pages/UploadPage';
@@ -10,41 +9,21 @@ import Sidebar from './components/Sidebar';
 
 import { 
   Home, 
-  CreditCard, 
   BarChart3, 
-  User, 
-  MessageSquare, 
   Settings, 
   Search, 
   Bell,
-  Siren,
-  Goal
+  Menu
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [brokerType, setBrokerType] = useState('Kuvera');
   const [uploadedFiles, setUploadedFiles] = useState({
     kuvera: null,
-    interactive: null
+    ibkr: null
   });
 
-  // Sample data for charts
-  const overviewData = [
-    { month: 'Jan', income: 200, expenses: 180 },
-    { month: 'Feb', income: 150, expenses: 200 },
-    { month: 'Mar', income: 300, expenses: 150 },
-    { month: 'Apr', income: 280, expenses: 220 },
-    { month: 'May', income: 200, expenses: 180 },
-    { month: 'Jun', income: 324, expenses: 200 },
-    { month: 'Jul', income: 250, expenses: 170 },
-    { month: 'Aug', income: 180, expenses: 160 },
-    { month: 'Sep', income: 220, expenses: 190 },
-    { month: 'Oct', income: 280, expenses: 200 },
-    { month: 'Nov', income: 200, expenses: 180 },
-    { month: 'Dec', income: 150, expenses: 140 }
-  ];
 
   const activityData = [
     { month: 'Jan', earning: 4, spent: 2 },
@@ -62,13 +41,6 @@ const Dashboard = () => {
   ];
 
 
-  const transactions = [
-    { name: 'Mathews Ferreira', amount: '+$54.00', time: '11:20 AM', avatar: '👤', type: 'positive' },
-    { name: 'Floyd Miles', amount: '-$39.65', time: '10:40 AM', avatar: '👤', type: 'negative' },
-    { name: 'Jerome Bell', amount: '+$26.00', time: '09:15 AM', avatar: '👤', type: 'positive' },
-    { name: 'Ralph Edwards', amount: '-$66.21', time: '08:20 AM', avatar: '👤', type: 'negative' }
-  ];
-
   //
   const [kuveraTransactions, setKuveraTransactions] = useState([]);
   const [ibkrTransactions, setIbkrTransactions] = useState([]);
@@ -81,6 +53,25 @@ const Dashboard = () => {
   const [euroInrRate, setEuroInrRate] = useState(null);
   const [netWorthCurrency, setNetWorthCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
   const [goalCurrency, setGoalCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const [balances, setBalances] = useState([
+    {
+      id: 1,
+      date: "2024-01-15",
+      value: 185000,
+      currency: "USD",
+      note: "Monthly statement balance"
+    },
+    {
+      id: 2,
+      date: "2024-02-15", 
+      value: 182000,
+      currency: "USD",
+      note: "After payment"
+    }
+  ]);
 
   // Fetch USD/INR rate from exchangerate-api.com
   useEffect(() => {
@@ -121,6 +112,83 @@ useEffect(() => {
     );
   }
 }, [rupeeInvestments, usdInvestments, euroInvestments, usdInrRate, euroInrRate, netWorthCurrency]);
+
+useEffect(() => {
+  // Load initial kuvera.csv file from public/data folder
+  const loadInitialKuveraFile = async () => {
+    try {
+      const response = await fetch('/data/kuvera.csv');
+      if (response.ok) {
+        const text = await response.text();
+        
+        // Parse the CSV using your existing logic
+        const [headerLine, ...lines] = text.split('\n').filter(Boolean);
+        const headers = headerLine.split(',');
+        
+        const parsed = lines.map(l => {
+          const vals = l.split(',');
+          return headers.reduce((obj, h, idx) => ({
+            ...obj,
+            [h.trim()]: vals[idx]?.trim()
+          }), {});
+        });
+        
+        setKuveraTransactions(parsed);
+        
+        // Calculate total mutual fund market value
+        const total = parsed
+          .filter(txn => txn['Type'] && txn['Type'].toLowerCase().includes('mutual'))
+          .reduce((sum, txn) => {
+            const val = parseFloat(txn['Market Value']?.replace(/[^0-9.-]/g, '') || 0);
+            return sum + (isNaN(val) ? 0 : val);
+          }, 0);
+        
+        setRupeeInvestments(total);
+        console.log('Initial Kuvera file loaded successfully');
+      }
+    } catch (error) {
+      console.log('Could not load initial kuvera.csv file:', error);
+      // This is not a critical error, so we just log it
+    }
+  };
+
+  loadInitialKuveraFile();
+}, []); // Empty dependency array means this runs once on mount
+
+
+useEffect(() => {
+  // Load initial ibkr.csv file from public/data folder
+  const loadInitialIbkrFile = async () => {
+    try {
+      const response = await fetch('/data/ibkr.csv');
+      if (response.ok) {
+        const text = await response.text();
+        
+        // Parse the CSV using your existing parseCSV function
+        const { headers, rows } = parseCSV(text);
+        
+        setIbkrTransactions(rows);
+        
+        // Calculate total trade value for USD investments
+        const totalTradeValue = rows.reduce((sum, txn) => {
+          const val = parseFloat(txn['TradeMoney'] || 0);
+          return sum + Math.abs(val);
+        }, 0);
+        
+        setUsdInvestments(totalTradeValue);
+        console.log('Initial IBKR file loaded successfully');
+      }
+    } catch (error) {
+      console.log('Could not load initial ibkr.csv file:', error);
+      // This is not a critical error, so we just log it
+    }
+  };
+
+  loadInitialIbkrFile();
+}, []); // Empty dependency array means this runs once on mount
+
+
+
 
 // Convert goalAmount (which is always in INR) to the selected currency
 const getGoalAmountInCurrency = () => {
@@ -187,6 +255,7 @@ const getGoalAmountInCurrency = () => {
       setRupeeInvestments(total);
 
       setActiveTab("Transactions");
+      setbrokerType("Kuvera");
     };
     reader.readAsText(selectedFile);
   }
@@ -244,8 +313,9 @@ const handleIbkrFile = (e) => {
       return sum + Math.abs(val);
     }, 0);
 
-    console.log('Total IBKR trade value:', totalTradeValue);
+
     setActiveTab('Transactions');
+    setbrokerType("Interactive Broker");
   };
 
   reader.readAsText(selectedFile);
@@ -276,15 +346,32 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
+      
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-
+      {sidebarOpen && (
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          toggleSidebar={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 overflow-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-semibold">{activeTab}</h1>
+        <div className="flex justify-between items-center p-6 pb-0">
+          <div className="flex items-center">
+            {!sidebarOpen && (
+              <button
+                className="mr-4 bg-gray-800 rounded-lg p-2 hover:bg-gray-700 transition-colors"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open Sidebar"
+              >
+                <Menu size={20} className="text-white" />
+              </button>
+            )}
+            <h1 className="text-2xl font-semibold">{activeTab}</h1>
+          </div>
           <div className="flex items-center space-x-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -299,77 +386,79 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        {activeTab === 'Dashboard' && (
-          <DashboardPage
-            netWorth={netWorth}
-            netWorthCurrency={netWorthCurrency}
-            setNetWorthCurrency={setNetWorthCurrency}
-            rupeeInvestments={rupeeInvestments}
-            usdInvestments={usdInvestments}
-            euroInvestments={euroInvestments}
-            usdInrRate={usdInrRate}
-            euroInrRate={euroInrRate}
-            getGoalAmountInCurrency={getGoalAmountInCurrency}
-            overviewData={overviewData}
-            activityData={activityData}
-            payments={payments}
-            transactions={transactions}
-          />
-        )}
+        <div className="p-6">
+          {/* Stats Cards */}
+          {activeTab === 'Dashboard' && (
+            <DashboardPage
+              netWorth={netWorth}
+              netWorthCurrency={netWorthCurrency}
+              setNetWorthCurrency={setNetWorthCurrency}
+              rupeeInvestments={rupeeInvestments}
+              usdInvestments={usdInvestments}
+              euroInvestments={euroInvestments}
+              usdInrRate={usdInrRate}
+              euroInrRate={euroInrRate}
+              getGoalAmountInCurrency={getGoalAmountInCurrency}
+              activityData={activityData}
+            />
+          )}
 
-        {/* Transactions Page */}
-        {activeTab === 'Transactions' && (
-          <TransactionsTab
-            brokerType={brokerType}
-            setBrokerType={setBrokerType}
-            kuveraTransactions={kuveraTransactions}
-            setRupeeInvestments={setRupeeInvestments}
-            ibkrTransactions={ibkrTransactions}
-            setUsdInvestments={setUsdInvestments}
-          />
-        )}
+          {/* Transactions Page */}
+          {activeTab === 'Transactions' && (
+            <TransactionsTab
+              brokerType={brokerType}
+              setBrokerType={setBrokerType}
+              kuveraTransactions={kuveraTransactions}
+              setRupeeInvestments={setRupeeInvestments}
+              ibkrTransactions={ibkrTransactions}
+              setUsdInvestments={setUsdInvestments}
+            />
+          )}
 
-
-        {/* Upload Page */}
-        {activeTab === 'Upload' && (
-          <UploadTab
-            uploadedFiles={uploadedFiles}
-            handleFileUpload={handleFileUpload}
-          />
-        )}
+          {/* Upload Page */}
+          {activeTab === 'Upload' && (
+            <UploadTab
+              uploadedFiles={uploadedFiles}
+              handleFileUpload={handleFileUpload}
+            />
+          )}
 
 
-        {/* Liabilities Page */}
-        {activeTab === 'Liabilities' && (
-          <LiabilitiesPage liabilities={liabilities} setLiabilities={setLiabilities} />
-        )}
 
-        {/* Analytics Page */}
-        {activeTab === 'Analytics' && (
-          <div className="flex flex-col items-center justify-center h-96">
-            <div className="bg-gray-800 p-8 rounded-lg text-center">
-              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Analytics</h2>
-              <p className="text-gray-400">Advanced analytics will be available here</p>
+          {/* Liabilities Page */}
+          {activeTab === 'Liabilities' && (
+            // <LiabilitiesPage liabilities={liabilities} setLiabilities={setLiabilities} />
+            <LiabilitiesPage
+              balances={balances}
+              setBalances={setBalances}
+            />
+          )}
+
+          {/* Analytics Page */}
+          {activeTab === 'Analytics' && (
+            <div className="flex flex-col items-center justify-center h-96">
+              <div className="bg-gray-800 p-8 rounded-lg text-center">
+                <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">Analytics</h2>
+                <p className="text-gray-400">Advanced analytics will be available here</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Goal Page */}
-        {activeTab === "Goals" && <GoalsPage />}
+          {/* Goal Page */}
+          {activeTab === "Goals" && <GoalsPage />}
 
-
-        {/* Setting Page */}
-        {activeTab === 'Setting' && (
-          <div className="flex flex-col items-center justify-center h-96">
-            <div className="bg-gray-800 p-8 rounded-lg text-center">
-              <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Settings</h2>
-              <p className="text-gray-400">Application settings will be available here</p>
+          {/* Setting Page */}
+          {activeTab === 'Setting' && (
+            <div className="flex flex-col items-center justify-center h-96">
+              <div className="bg-gray-800 p-8 rounded-lg text-center">
+                <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">Settings</h2>
+                <p className="text-gray-400">Application settings will be available here</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

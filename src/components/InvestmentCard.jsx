@@ -30,9 +30,11 @@ export default function InvestmentCard({
   lastUpdated,
   badgeGradient = ["#3b82f6", "#2563eb"],
   icons,
+  amountLocale = "en-IN",
   onClick,
 }) {
-  const amountFmt = new Intl.NumberFormat("en-IN").format(amount);
+  
+  const amountFmt = new Intl.NumberFormat(amountLocale).format(amount);
   const [badgeFrom, badgeTo] = badgeGradient;
   
   const formatAmountWithSmallDecimal = (amount) => {
@@ -41,7 +43,7 @@ export default function InvestmentCard({
       <>
         {integerPart}
         {decimalPart && (
-          <span className="text-[18px] sm:text-[20px] font-extrabold">
+          <span className="text-[16px] sm:text-[18px] font-extrabold">
             .{decimalPart}
           </span>
         )}
@@ -117,7 +119,7 @@ export default function InvestmentCard({
 
             {/* Amount row — full width */}
             <div className="w-full">
-              <div className="text-[28px] sm:text-[30px] font-extrabold tracking-tight leading-none">
+              <div className="text-white text-[28px] sm:text-[30px] font-extrabold tracking-tight leading-none">
                 {currencySymbol} {formatAmountWithSmallDecimal(amountFmt)}
               </div>
             </div>

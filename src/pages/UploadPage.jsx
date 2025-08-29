@@ -91,13 +91,13 @@ const UploadTab = ({
           <div className="p-8">
             <h3 className="text-xl font-semibold mb-2">Interactive Brokers</h3>
             <p className="text-gray-400 mb-6">Upload your Interactive Brokers CSV file</p>
-            {uploadedFiles.interactive ? (
+            {uploadedFiles.ibkr ? (
               <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-center mb-2">
                   <Check className="w-6 h-6 text-green-500 mr-2" />
                   <span className="text-green-500 font-medium">File Uploaded</span>
                 </div>
-                <p className="text-sm text-gray-300">{uploadedFiles.interactive.name}</p>
+                <p className="text-sm text-gray-300">{uploadedFiles.ibkr.name}</p>
               </div>
             ) : (
               <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 mb-4 hover:border-red-500 transition-colors">
