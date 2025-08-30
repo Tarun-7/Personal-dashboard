@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, CreditCard, BarChart3, User, MessageSquare, Settings, Siren, Goal, ChevronDown, ChevronRight, List, PieChart, TrendingUp, DollarSign, Bitcoin, Activity, Shield, Target, Bell, UserIcon, IndianRupee } from 'lucide-react';
+import { Home, CreditCard, BarChart3, Settings, Siren, Goal, ChevronDown, ChevronRight, List, PieChart, TrendingUp, DollarSign, Bitcoin, PiggyBank, Shield, Target, Bell, UserIcon, IndianRupee } from 'lucide-react';
 
 const sidebarItems = [
  { name: 'Dashboard', icon: Home },
@@ -7,19 +7,19 @@ const sidebarItems = [
     name: 'INR Investments', 
     icon: IndianRupee,
     submenu: [
-     { name: 'All Transactions', path: 'transactions-all', icon: List },
-     { name: 'Mutual Funds', path: 'transactions-mf', icon: PieChart },
-     { name: 'Stocks', path: 'transactions-stocks', icon: TrendingUp }
+     { name: 'Overview', path: 'inr-overview', icon: List },
+     { name: 'Mutual Funds', path: 'inr-mutual-funds', icon: PieChart },
+     { name: 'Savings', path: 'inr-savings', icon: PiggyBank }
   ]
  },
   { 
     name: 'USD Investments', 
     icon: DollarSign,
     submenu: [
-     { name: 'All Transactions', path: 'transactions-all', icon: List },
-     { name: 'Mutual Funds', path: 'transactions-mf', icon: PieChart },
-     { name: 'Stocks', path: 'transactions-stocks', icon: TrendingUp },
-     { name: 'Crypto', path: 'transactions-crypto', icon: Bitcoin }
+     { name: 'Overview', path: 'usd-overview', icon: List },
+     { name: 'Mutual Funds', path: 'usd-mf', icon: PieChart },
+     { name: 'Stocks', path: 'usd-stocks', icon: TrendingUp },
+     { name: 'Crypto', path: 'usd-crypto', icon: Bitcoin }
   ]
  },
  { 

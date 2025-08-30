@@ -6,6 +6,10 @@ import UploadTab from './pages/UploadPage';
 import LiabilitiesPage from './pages/LiabilitiesPage';
 import GoalsPage from './pages/GoalsPage';
 import Sidebar from './components/Sidebar';
+import InrMutualFunds from './pages/INR/InrMutualFunds';
+import InrInvestmentsOverview from './pages/INR/InrOverviewPage';
+import InrSavingsDashboardPage from './pages/INR/InrSavingsDashboardPage';
+import UsdStocksPage from './pages/USD/UsdStocksPage';
 
 import { 
   Home, 
@@ -15,6 +19,7 @@ import {
   Bell,
   Menu
 } from 'lucide-react';
+
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -335,17 +340,10 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
   return sum;
 }, 0);
 
-
-
-  const payments = [
-    { category: 'Account', amount: '$3240', color: 'bg-green-500' },
-    { category: 'Software', amount: '$240', color: 'bg-green-500' },
-    { category: 'Rent House', amount: '$1640', color: 'bg-green-500' },
-    { category: 'Food', amount: '$140', color: 'bg-green-500' }
-  ];
-
   return (
     <div className="flex h-screen bg-gray-900 text-white">
+
+      
       
       {/* Sidebar */}
       {sidebarOpen && (
@@ -373,15 +371,6 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
             <h1 className="text-2xl font-semibold">{activeTab}</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Search..."
-                className="bg-gray-800 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <Bell className="w-6 h-6 text-gray-400 cursor-pointer hover:text-white" />
             <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
           </div>
         </div>
@@ -400,8 +389,35 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
               euroInrRate={euroInrRate}
               getGoalAmountInCurrency={getGoalAmountInCurrency}
               activityData={activityData}
+              setActiveTab={setActiveTab}
             />
           )}
+
+          {activeTab === 'inr-overview' && (
+            <InrInvestmentsOverview 
+              transactions={kuveraTransactions} 
+              onTotalMarketValue={setRupeeInvestments} 
+            />
+          )}
+
+          {activeTab === 'inr-mutual-funds' && (
+            <InrMutualFunds 
+              transactions={kuveraTransactions} 
+              onTotalMarketValue={setRupeeInvestments} 
+            />
+          )}
+
+          {activeTab === 'inr-savings' && (
+            <InrSavingsDashboardPage
+            />
+          )}
+          
+          {activeTab === 'usd-stocks' && (
+            <UsdStocksPage
+              transactions={ibkrTransactions}
+              onTotalMarketValueChange={setUsdInvestments}
+            />
+          )}  
 
           {/* Transactions Page */}
           {activeTab === 'Transactions' && (
@@ -427,7 +443,6 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
 
           {/* Liabilities Page */}
           {activeTab === 'Liabilities' && (
-            // <LiabilitiesPage liabilities={liabilities} setLiabilities={setLiabilities} />
             <LiabilitiesPage
               balances={balances}
               setBalances={setBalances}
@@ -458,6 +473,7 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>
