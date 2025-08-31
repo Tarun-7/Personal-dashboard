@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, CreditCard, BarChart3, Settings, Siren, Goal, ChevronDown, ChevronRight, List, PieChart, TrendingUp, DollarSign, Bitcoin, PiggyBank, Shield, Target, Bell, UserIcon, IndianRupee } from 'lucide-react';
+import { Home, CreditCard, BarChart3, Settings, Siren, Goal, ChevronDown, ChevronRight, List, PieChart, TrendingUp, DollarSign, Bitcoin, PiggyBank, Shield, Target, Bell, User, IndianRupee, Menu, X } from 'lucide-react';
 
 const sidebarItems = [
  { name: 'Dashboard', icon: Home },
@@ -17,14 +17,9 @@ const sidebarItems = [
     icon: DollarSign,
     submenu: [
      { name: 'Overview', path: 'usd-overview', icon: List },
-     { name: 'Mutual Funds', path: 'usd-mf', icon: PieChart },
      { name: 'Stocks', path: 'usd-stocks', icon: TrendingUp },
      { name: 'Crypto', path: 'usd-crypto', icon: Bitcoin }
   ]
- },
- { 
-   name: 'Transactions', 
-   icon: BarChart3,
  },
  { name: 'Upload', icon: CreditCard },
  { 
@@ -40,15 +35,23 @@ const sidebarItems = [
    name: 'Settings', 
    icon: Settings,
    submenu: [
-     { name: 'Profile', path: 'settings-profile', icon: UserIcon },
+     { name: 'Profile', path: 'settings-profile', icon: User },
      { name: 'Preferences', path: 'settings-preferences', icon: Settings },
      { name: 'Notifications', path: 'settings-notifications', icon: Bell }
    ]
  }
 ];
 
-const Sidebar = ({ activeTab, setActiveTab, toggleSidebar }) => {
-  const [expandedMenus, setExpandedMenus] = useState({});
+const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
+  // Expand all submenus by default
+  const [expandedMenus, setExpandedMenus] = useState(
+    sidebarItems.reduce((acc, item) => {
+      if (item.submenu) {
+        acc[item.name] = true; // Default to expanded
+      }
+      return acc;
+    }, {})
+  );
 
   const toggleSubmenu = (itemName) => {
     setExpandedMenus(prev => ({
@@ -67,76 +70,160 @@ const Sidebar = ({ activeTab, setActiveTab, toggleSidebar }) => {
     }
   };
 
+  const getItemGradient = (itemName, isActive) => {
+    if (itemName.includes('INR')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-blue-600 to-purple-600' 
+        : 'hover:bg-gradient-to-r hover:from-blue-600/20 hover:to-purple-600/20';
+    } else if (itemName.includes('USD')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
+        : 'hover:bg-gradient-to-r hover:from-green-600/20 hover:to-emerald-600/20';
+    } else if (itemName.includes('Analytics')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-orange-600 to-yellow-600' 
+        : 'hover:bg-gradient-to-r hover:from-orange-600/20 hover:to-yellow-600/20';
+    }
+    return isActive 
+      ? 'bg-gradient-to-r from-gray-600 to-gray-700' 
+      : 'hover:bg-gray-700/50';
+  };
+
   return (
-    <div className="h-screen flex flex-col">
-      <div className="w-64 bg-gray-800 p-6">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-green-500 rounded mr-3"></div>
-            <span className="text-xl font-semibold">FIRE</span>
+    <div className={`h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-80'}`}>
+      <div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 backdrop-blur-sm border-r border-gray-700/50 p-6 h-full flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8 flex-shrink-0">
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
+            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl mr-3 flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-lg">F</span>
+            </div>
+            {!isCollapsed && (
+              <div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                  FIRE
+                </span>
+                <p className="text-xs text-gray-400 mt-1">Portfolio Tracker</p>
+              </div>
+            )}
           </div>
+          
           <button
-            className="p-2 rounded hover:bg-gray-700"
+            className="p-2 rounded-xl hover:bg-gray-700/50 transition-colors border border-gray-600/50"
             onClick={toggleSidebar}
             aria-label="Toggle Sidebar"
           >
-            <span className="text-2xl">☰</span>
+            {isCollapsed ? <Menu className="w-5 h-5 text-gray-400" /> : <X className="w-5 h-5 text-gray-400" />}
           </button>
         </div>
         
-        <nav className="flex-1 overflow-y-auto">
-          {sidebarItems.map((item) => (
-            <div key={item.name} className="mb-2">
-              {/* Main Menu Item */}
-              <div
-                className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                  item.name === activeTab
-                   ? 'bg-green-500 text-white'
-                   : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
-                onClick={() => handleItemClick(item)}
-              >
-                <div className="flex items-center">
-                  <item.icon className="w-6 h-6 mr-3" />
-                  <span>{item.name}</span>
+        {/* Navigation */}
+        <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-2">
+          <div className="space-y-2 pb-4">
+            {sidebarItems.map((item) => (
+              <div key={item.name} className="group">
+                {/* Main Menu Item */}
+                <div
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-300 border border-transparent hover:border-gray-600/30 ${
+                    item.name === activeTab
+                     ? `${getItemGradient(item.name, true)} text-white shadow-lg border-gray-600/50`
+                     : `text-gray-300 ${getItemGradient(item.name, false)} hover:text-white`
+                  }`}
+                  onClick={() => handleItemClick(item)}
+                >
+                  <div className="flex items-center">
+                    <div className={`p-2 rounded-lg mr-3 ${isCollapsed ? 'mx-auto' : ''}`}>
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                  </div>
+                  {!isCollapsed && item.submenu && (
+                    <div className="ml-2 transition-transform duration-200">
+                      {expandedMenus[item.name] ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </div>
+                  )}
                 </div>
-                {item.submenu && (
-                  <div className="ml-2">
-                    {expandedMenus[item.name] ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
+
+                {/* Submenu Items */}
+                {!isCollapsed && item.submenu && expandedMenus[item.name] && (
+                  <div className="ml-6 mt-2 space-y-1 border-l-2 border-gray-700/50 pl-4">
+                    {item.submenu.map((submenuItem) => (
+                      <div
+                        key={submenuItem.path}
+                        className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-300 border border-transparent ${
+                          submenuItem.path === activeTab
+                           ? 'bg-gradient-to-r from-gray-700 to-gray-600 text-white border-gray-500/50 shadow-md'
+                           : 'text-gray-400 hover:text-white hover:bg-gray-700/30 hover:border-gray-600/30'
+                        }`}
+                        onClick={() => handleItemClick(item, submenuItem)}
+                      >
+                        <div className="p-1.5 rounded-md mr-3">
+                          {submenuItem.icon ? (
+                            <submenuItem.icon className="w-4 h-4" />
+                          ) : (
+                            <div className="w-2 h-2 bg-current rounded-full"></div>
+                          )}
+                        </div>
+                        <span className="text-sm font-medium">{submenuItem.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Collapsed submenu indicator */}
+                {isCollapsed && item.submenu && (
+                  <div className="absolute left-20 top-0 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    <p className="text-white font-medium text-sm mb-2">{item.name}</p>
+                    {item.submenu.map((submenuItem) => (
+                      <div key={submenuItem.path} className="text-gray-300 text-xs py-1">
+                        {submenuItem.name}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-
-              {/* Submenu Items */}
-              {item.submenu && expandedMenus[item.name] && (
-                <div className="ml-6 mt-1 space-y-1">
-                  {item.submenu.map((submenuItem) => (
-                    <div
-                      key={submenuItem.path}
-                      className={`flex items-center p-2 rounded-lg cursor-pointer transition-colors text-sm ${
-                        submenuItem.path === activeTab
-                         ? 'bg-green-400 text-white'
-                         : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                      }`}
-                      onClick={() => handleItemClick(item, submenuItem)}
-                    >
-                      {submenuItem.icon ? (
-                        <submenuItem.icon className="w-4 h-4 mr-3" />
-                      ) : (
-                        <div className="w-2 h-2 bg-gray-500 rounded-full mr-3"></div>
-                      )}
-                      <span>{submenuItem.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-           ))}
+            ))}
+          </div>
         </nav>
+
+        {/* Footer */}
+        {!isCollapsed && (
+          <div className="border-t border-gray-700/50 pt-6 mt-6 flex-shrink-0">
+            <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm rounded-xl p-4 border border-gray-600/30">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">John Doe</p>
+                  <p className="text-gray-400 text-xs">Premium User</p>
+                </div>
+              </div>
+              <div className="bg-gray-700/50 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-300 text-xs">Portfolio Health</span>
+                  <span className="text-green-400 text-xs font-medium">Excellent</span>
+                </div>
+                <div className="w-full bg-gray-600 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full w-4/5"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Collapsed footer */}
+        {isCollapsed && (
+          <div className="border-t border-gray-700/50 pt-6 mt-6 flex justify-center flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
