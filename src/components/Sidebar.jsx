@@ -90,7 +90,7 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
   };
 
   return (
-    <div className={`h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-80'}`}>
+    <div className={`h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-70'}`}>
       <div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 backdrop-blur-sm border-r border-gray-700/50 p-6 h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-8 flex-shrink-0">
@@ -199,8 +199,7 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-white font-medium text-sm">John Doe</p>
-                  <p className="text-gray-400 text-xs">Premium User</p>
+                  <p className="text-white font-medium text-sm">Tarun Sunkara</p>
                 </div>
               </div>
               <div className="bg-gray-700/50 rounded-lg p-3">
