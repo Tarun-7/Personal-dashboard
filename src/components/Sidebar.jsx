@@ -91,7 +91,7 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
 
   return (
     <div className={`h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-70'}`}>
-      <div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 backdrop-blur-sm border-r border-gray-700/50 p-6 h-full flex flex-col">
+      <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 backdrop-blur-sm border-r border-gray-700/50 p-6 h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-8 flex-shrink-0">
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
@@ -200,15 +200,6 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
                 </div>
                 <div>
                   <p className="text-white font-medium text-sm">Tarun Sunkara</p>
-                </div>
-              </div>
-              <div className="bg-gray-700/50 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-300 text-xs">Portfolio Health</span>
-                  <span className="text-green-400 text-xs font-medium">Excellent</span>
-                </div>
-                <div className="w-full bg-gray-600 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full w-4/5"></div>
                 </div>
               </div>
             </div>
