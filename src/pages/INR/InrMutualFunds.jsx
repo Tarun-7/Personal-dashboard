@@ -233,12 +233,14 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
       const orderType = (transaction["Order"] || Object.values(transaction)[3] || 'BUY').toUpperCase();
       const units = parseFloat(transaction["Units"] || Object.values(transaction)[4] || 0);
       const amount = parseFloat(transaction["Amount (INR)"] || Object.values(transaction)[7] || 0);
+      const nav = parseFloat(transaction['NAV']) || 0;
 
       if (!fundMap.has(fundName)) {
         fundMap.set(fundName, {
           fund: fundName,
           totalUnits: 0,
           totalAmount: 0,
+          weightedNavSum: 0,
           rows: []
         });
       }
@@ -251,29 +253,35 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
         // For SELL orders: subtract units and amount
         fundData.totalUnits -= units;
         fundData.totalAmount -= amount;
+        fundData.weightedNavSum -= (units * nav); 
       } else {
         // For BUY orders: add units and amount (default behavior)
         fundData.totalUnits += units;
         fundData.totalAmount += amount;
+        fundData.weightedNavSum += (units * nav);
       }
     });
 
-    return Array.from(fundMap.values()).map(fund => {
-      const marketValue = state.marketValues[fund.fund] || 0;
-      const currentValue = marketValue * fund.totalUnits;
-      const profitLoss = currentValue - fund.totalAmount;
-      const profitLossPercent = fund.totalAmount > 0 ? (profitLoss / fund.totalAmount) * 100 : 0;
-      const xirrPercent = calculateFundXIRR(fund.rows, currentValue) * 100;
+    return Array.from(fundMap.values())
+      .filter(fund => fund.totalUnits > 0.0001) // Filter out funds with zero or near-zero quantities
+      .map(fund => {
+        const marketValue = state.marketValues[fund.fund] || 0;
+        const currentValue = marketValue * fund.totalUnits;
+        const profitLoss = currentValue - fund.totalAmount;
+        const profitLossPercent = fund.totalAmount > 0 ? (profitLoss / fund.totalAmount) * 100 : 0;
+        const xirrPercent = calculateFundXIRR(fund.rows, currentValue) * 100;
+        const avgNav = fund.totalUnits > 0 ? fund.weightedNavSum / fund.totalUnits : 0;
 
-      return {
-        ...fund,
-        marketValue,
-        currentValue,
-        profitLoss,
-        profitLossPercent,
-        xirrPercent
-      };
-    });
+        return {
+          ...fund,
+          marketValue,
+          currentValue,
+          profitLoss,
+          profitLossPercent,
+          xirrPercent,
+          avgNav
+        };
+      });
   }, [transactions, state.marketValues]);
 
 
@@ -395,6 +403,32 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
     dispatch({ type: ACTIONS.SET_FILTER, payload: filter });
   };
 
+  // Fund Badge Component - Add this near the top of your component
+  const getFundBadge = (fundName) => {
+    const name = fundName.toLowerCase();
+    
+    if (name.includes('nifty 50')) {
+      return <span className="ml-1 bg-indigo-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">NIFTY 50</span>;
+    }
+    if (name.includes('nifty next 50')) {
+      return <span className="ml-1 bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">NIFTY Next 50</span>;
+    }
+    if (name.includes('small cap')) {
+      return <span className="ml-1 bg-red-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">Small Cap</span>;
+    }
+    if (name.includes('midcap') || name.includes('mid cap')) {
+      return <span className="ml-1 bg-green-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">Mid Cap</span>;
+    }
+    if (name.includes('flexi cap') || name.includes('multi cap')) {
+      return <span className="ml-1 bg-pink-500 text-black rounded-full px-2 py-0.5 text-xs font-bold">Flexi Cap</span>;
+    }
+    if (name.includes('s&p 500') || name.includes('us total')) {
+      return <span className="ml-1 bg-yellow-500 text-black rounded-full px-2 py-0.5 text-xs font-bold">US Equity</span>;
+    }
+    return null;
+  };
+
+  // Export to CSV
   const exportToCSV = () => {
     const headers = ['Fund Name', 'Units', 'NAV', 'Invested Amount', 'Current Value', 'Profit/Loss', 'P/L %'];
     const csvContent = [
@@ -421,7 +455,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
 
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center p-4">
         <div className="bg-gray-800 border border-gray-700 rounded-xl p-12 text-center max-w-md shadow-2xl">
           <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
             <TrendingUp className="w-10 h-10 text-gray-400" />
@@ -454,7 +488,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white p-4">
       <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -545,12 +579,12 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
               placeholder="Search funds..."
               value={state.searchTerm}
               onChange={(e) => dispatch({ type: ACTIONS.SET_SEARCH, payload: e.target.value })}
-              className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
+              className="w-full pl-9 pr-3 py-2 bg-slate-900/60 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
             />
           </div>
 
           {/* Fund Filter Buttons */}
-          <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-600">
+          <div className="flex bg-slate-900/60 rounded-lg p-1 border border-gray-600">
             <button
               onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -584,7 +618,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
           </div>
 
           {/* Return Type Toggle */}
-          <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-600">
+          <div className="flex bg-slate-900/60 rounded-lg p-1 border border-gray-600">
             <button
               onClick={() => setReturnType('absolute')}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -624,102 +658,167 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
 
         {/* Portfolio Table */}
         {!state.loading && (
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden shadow-xl mb-12">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-800">
-                  <tr>
-                    {[
-                      { key: 'fund', label: 'Fund Name' },
-                      { key: 'units', label: 'Units' },
-                      { key: 'nav', label: 'Current NAV' },
-                      { key: 'invested', label: 'Invested Amount' },
-                      { key: 'marketValue', label: 'Current Value' },
-                      { key: 'profitLoss', label: 'Profit/Loss' },
-                      { 
-                        key: returnType === 'absolute' ? 'profitLossPercent' : 'xirrPercent', 
-                        label: returnType === 'absolute' ? 'Profit/Loss %' : 'XIRR %' 
-                      }
-                    ].map(header => (
-                      <th
-                        key={header.key}
-                        onClick={() => handleSort(header.key)}
-                        className="px-6 py-4 text-left text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          {header.label}
-                          <SortIcon column={header.key} />
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedData.map((fund, index) => (
-                    <tr
-                      key={fund.fund}
-                      className={`border-t border-gray-700 hover:bg-gray-700/30 transition-colors ${
-                        index % 2 === 0 ? 'bg-gray-800/30' : 'bg-gray-800/50'
-                      }`}
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-white max-w-xs truncate" title={fund.fund}>
-                        {fund.fund}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        {fund.totalUnits.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        ₹{fund.marketValue.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        {formatCurrency(fund.totalAmount)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-white font-semibold">
-                        {formatCurrency(fund.currentValue)}
-                      </td>
-                      <td className={`px-6 py-4 text-sm font-semibold ${
-                        fund.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {formatCurrency(fund.profitLoss)}
-                      </td>
-                      {/* In your table row mapping */}
-                      <td className={`px-6 py-4 text-sm ${
-                        (returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent) >= 0 
-                          ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {(returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent) >= 0 ? (
-                          <TrendingUp className="inline mr-1" size={16} />
-                        ) : (
-                          <TrendingDown className="inline mr-1" size={16} />
-                        )}
-                        {formatPercent(returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent)}
-                      </td>
+        <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden mb-12">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-slate-700/70 bg-slate-900/80">
+                  {/* Fund Name Column */}
+                  <th 
+                    className="group px-6 py-5 text-left text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                    onClick={() => handleSort('fund')}
+                  >
+                    <span className="inline-flex items-center">
+                      Fund Name
+                      <SortIcon column="fund" />
+                    </span>
+                  </th>
 
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-gray-800 border-t-2 border-blue-500">
-                  {/* Total Portfolio Row */}
-                  <tr className="bg-gray-800 border-t border-gray-600 font-semibold">
-                    <td className="px-6 py-4 text-gray-200">Total Portfolio</td>
-                    <td className="px-6 py-4"></td>
-                    <td className="px-6 py-4"></td>
-                    <td className="px-6 py-4 text-gray-200">{formatCurrency(totals.totalInvested)}</td>
-                    <td className="px-6 py-4 text-gray-200">{formatCurrency(totals.totalCurrentValue)}</td>
-                    <td className={`px-6 py-4 ${totals.totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatCurrency(totals.totalProfitLoss)}
+                  {/* Units Column */}
+                  <th 
+                    className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                    onClick={() => handleSort('units')}
+                  >
+                    <span className="inline-flex items-center justify-end w-full">
+                      Units
+                      <SortIcon column="units" />
+                    </span>
+                  </th>
+
+                  {/* Net Invested Column */}
+                  <th 
+                    className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                    onClick={() => handleSort('invested')}
+                  >
+                    <span className="inline-flex items-center justify-end w-full">
+                      Net Invested
+                      <SortIcon column="invested" />
+                    </span>
+                  </th>
+
+                  {/* Market Value Column */}
+                  <th 
+                    className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                    onClick={() => handleSort('marketValue')}
+                  >
+                    <span className="inline-flex items-center justify-end w-full">
+                      Market Value
+                      <SortIcon column="marketValue" />
+                    </span>
+                  </th>
+
+                  {/* Profit/Loss Column */}
+                  <th 
+                    className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                    onClick={() => handleSort('profitLoss')}
+                  >
+                    <span className="inline-flex items-center justify-end w-full">
+                      Profit/Loss ({returnType === 'absolute' ? 'Absolute' : 'XIRR'})
+                      <SortIcon column="profitLoss" />
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {sortedData.map((fund, index) => (
+                  <tr 
+                    key={fund.fund} 
+                    className="border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                  >
+                    {/* Fund Name - Two Line Format */}
+                    <td className="px-6 py-5">
+                      <div className="font-semibold text-white text-base max-w-xs">
+                        {fund.fund.length > 40 ? fund.fund.substring(0, 40) + '...' : fund.fund}
+                      </div>
+                      <div className="mt-2">
+                        {getFundBadge(fund.fund)}
+                      </div>
                     </td>
-                    <td className={`px-6 py-4 ${
-                      (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 
-                        ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {formatPercent(returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn)}
+
+                    {/* Units - Two Line Format */}
+                    <td className="px-6 py-5 text-right">
+                      <div className="text-slate-200 font-semibold text-base">
+                        {Number(fund.totalUnits).toFixed(2)}
+                      </div>
+                    </td>
+
+                    {/* Net Invested - Two Line Format */}
+                    <td className="px-6 py-5 text-right">
+                      <div className="text-slate-200 font-semibold text-base">
+                        {formatCurrency(fund.totalAmount)}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1 font-medium">
+                         ₹{fund.avgNav.toFixed(2)}
+                      </div>
+                    </td>
+
+                    {/* Market Value - Two Line Format */}
+                    <td className="px-6 py-5 text-right">
+                      <div className="text-slate-200 font-semibold text-base">
+                        {formatCurrency(fund.currentValue)}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1 font-medium">
+                        ₹{fund.marketValue.toFixed(2)}
+                      </div>
+                    </td>
+
+                    {/* Profit/Loss - Two Line Format */}
+                    <td className="px-6 py-5 text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <span className={`font-bold text-base ${fund.profitLoss >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatCurrency(fund.profitLoss)}
+                        </span>
+                        {fund.profitLoss >= 0 ? (
+                          <TrendingUp className="w-5 h-5 text-emerald-400 hover:scale-110 transition-transform duration-200" />
+                        ) : fund.profitLoss < 0 ? (
+                          <TrendingDown className="w-5 h-5 text-red-400 hover:scale-110 transition-transform duration-200" />
+                        ) : null}
+                      </div>
+                      <div className={`text-xs mt-1 font-semibold ${
+                        (returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent) >= 0 
+                          ? 'text-emerald-400' 
+                          : (returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent) < 0 
+                            ? 'text-red-400' 
+                            : 'text-slate-400'
+                      }`}>
+                        {formatPercent(returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent)}
+                      </div>
                     </td>
                   </tr>
-                </tfoot>
-              </table>
-            </div>
+                ))}
+              </tbody>
+
+              {/* Footer with totals */}
+              <tfoot>
+                <tr className="border-t-2 border-blue-500/30 bg-gradient-to-r from-slate-900 to-slate-800">
+                  <td className="px-6 py-5 text-left text-white font-bold text-lg">
+                    Total Portfolio
+                  </td>
+                  <td className="px-6 py-5 text-right"></td>
+                  <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
+                    {formatCurrency(totals.totalInvested)}
+                  </td>
+                  <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
+                    {formatCurrency(totals.totalCurrentValue)}
+                  </td>
+                  <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
+                    <div className={totals.totalProfitLoss >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                      {formatCurrency(totals.totalProfitLoss)}
+                    </div>
+                    <div className={
+                      (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 
+                        ? 'text-emerald-400' 
+                        : 'text-red-400'
+                    }>
+                      {formatPercent(returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn)}
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
+        </div>
         )}
 
         {/* No Results */}
@@ -731,7 +830,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
         )}
 
         {/* Individual Transactions Section */}
-        <div className="mt-8 bg-gray-800 rounded-2xl p-6 border border-gray-700">
+        <div className="mt-8 bg-slate-900/60 rounded-2xl p-6 border border-gray-700">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               <BarChart3 size={24} />
@@ -765,19 +864,22 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 {/* Total Units */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
+                <div className="bg-slate-900/60 p-4 rounded-xl border border-gray-600">
                   <h4 className="text-gray-400 text-sm font-medium mb-1">Total Units</h4>
                   <p className="text-white text-xl font-bold">{selectedFundData.totalUnits.toFixed(2)}</p>
                 </div>
 
                 {/* Current NAV */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Current NAV</h4>
-                  <p className="text-white text-xl font-bold">₹{selectedFundData.marketValue.toFixed(2)}</p>
+                <div className="bg-slate-900/60 p-4 rounded-xl border border-gray-600">
+                  <h4 className="text-gray-400 text-sm font-medium mb-1">Avg NAV / Current NAV</h4>
+                  <div className="flex flex-col">
+                    <p className="text-white text-lg font-semibold">{formatCurrency(selectedFundData.avgNav.toFixed(2))}</p>
+                    <p className="text-blue-400 text-lg font-semibold">₹{selectedFundData.marketValue.toFixed(2)}</p>
+                  </div>
                 </div>
 
                 {/* Investment & Value */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
+                <div className="bg-slate-900/60 p-4 rounded-xl border border-gray-600">
                   <h4 className="text-gray-400 text-sm font-medium mb-1">Invested / Current</h4>
                   <div className="flex flex-col">
                     <p className="text-white text-lg font-semibold">{formatCurrency(selectedFundData.totalAmount)}</p>
@@ -812,7 +914,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
               </div>
 
               {/* Transaction History Section */}
-              <div className="bg-gray-700 rounded-xl border border-gray-600">
+              <div className="bg-slate-900/60 rounded-xl border border-gray-600">
                 <div className="flex items-center justify-between p-4 border-b border-gray-600">
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                     Transaction History
@@ -892,7 +994,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                         
                         {/* Summary Row */}
                         <tfoot>
-                          <tr className="bg-gray-600/30 border-t-2 border-gray-500">
+                          <tr className="bg-slate-900/60 border-t-2 border-gray-500">
                             <td colSpan="3" className="py-3 px-4 text-white font-bold">Total for {selectedFund}</td>
                             <td className="py-3 px-4 text-right text-white font-bold">
                               {selectedFundData.totalUnits.toFixed(2)}

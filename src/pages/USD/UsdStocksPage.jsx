@@ -546,7 +546,7 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
 
   if (state.error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center p-4">
         <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-8 text-center max-w-md">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">Error Loading Data</h3>
@@ -658,12 +658,12 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
               placeholder="Search stocks or companies..."
               value={state.searchTerm}
               onChange={(e) => dispatch({ type: ACTIONS.SET_SEARCH, payload: e.target.value })}
-              className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
+              className="w-full pl-9 pr-3 py-2 bg-slate-900/60 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
             />
           </div>
 
           {/* Stock Filter Buttons */}
-          <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-600">
+          <div className="flex bg-slate-900/60 rounded-lg p-1 border border-gray-600">
             <button
               onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -697,7 +697,7 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
           </div>
 
           {/* Return Type Toggle */}
-          <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-600">
+          <div className="flex bg-slate-900/60 rounded-lg p-1 border border-gray-600">
             <button
               onClick={() => setReturnType('absolute')}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
