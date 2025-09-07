@@ -7,7 +7,7 @@ import GoalsPage from './pages/GoalsPage';
 import Sidebar from './components/Sidebar';
 import InrMutualFunds from './pages/INR/InrMutualFunds';
 import InrInvestmentsOverview from './pages/INR/InrOverviewPage';
-import InrSavingsDashboardPage from './pages/INR/InrSavingsDashboardPage';
+import InrSavingsDashboardPage from './pages/INR/InrSavingsPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
 import UsdCryptoPage from './pages/USD/UsdCryptoPage';
 
@@ -15,6 +15,7 @@ import DataLoadingService from './services/DataLoadingService';
 import InvestmentCalculationService from './services/InvestmentCalculationService';
 import ExchangeRateService from './services/ExchangeRateService';
 import MutualFundCalculationService from './services/MutualFundCalculationService';
+import SavingsCalculationService from './services/SavingsCalculationService'; 
 
 import { 
   Home, 
@@ -34,7 +35,6 @@ const Dashboard = () => {
     ibkr: null
   });
 
-
   const activityData = [
     { month: 'Jan', earning: 4, spent: 2 },
     { month: 'Feb', earning: 3, spent: 4 },
@@ -50,8 +50,8 @@ const Dashboard = () => {
     { month: 'Dec', earning: 6, spent: 2 }
   ];
 
-
-  // Reviewed 
+  // Reviewed
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rupeeInvestments, setRupeeInvestments] = useState(0);
   const [InrMfValue, setInrMfvalue] = useState(0);
   const [InrSavingsValue, setInrSavingsValue] = useState(0);
@@ -61,6 +61,15 @@ const Dashboard = () => {
     totalProfitLoss: 0,
     absoluteReturn: 0,
     fundsData: []
+  });
+  const [savingsSummary, setSavingsSummary] = useState({
+    savingsData: [],
+    totalAmount: 0,
+    avgInterestRate: 0,
+    totalInterestEarning: 0,
+    allocation: [],
+    itemCount: 0,
+    error: null
   });
 
 
@@ -75,8 +84,6 @@ const Dashboard = () => {
   const [euroInrRate, setEuroInrRate] = useState(null);
   const [netWorthCurrency, setNetWorthCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
   const [goalCurrency, setGoalCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
-
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [balances, setBalances] = useState([
     {
@@ -95,6 +102,31 @@ const Dashboard = () => {
     }
   ]);
 
+  // Update rupee investments whenever mutual fund or savings values change
+  useEffect(() => {
+    setRupeeInvestments(InrMfValue + InrSavingsValue);
+  }, [InrMfValue, InrSavingsValue]);
+
+  // Load savings data on app initialization
+  useEffect(() => {
+    const loadSavingsData = async () => {
+      try {
+        const summary = await SavingsCalculationService.calculateSavingsSummary();
+        setSavingsSummary(summary);
+        setInrSavingsValue(summary.totalAmount); // Update the dashboard value
+      } catch (error) {
+        console.error('Error loading savings data:', error);
+      }
+    };
+
+    loadSavingsData();
+  }, []);
+
+  // Function to handle savings data updates from the savings page
+  const handleSavingsUpdate = (updatedSummary) => {
+    setSavingsSummary(updatedSummary);
+    setInrSavingsValue(updatedSummary.totalAmount);
+  };
 
   useEffect(() => {
     const calculateMutualFundSummary = async () => {
@@ -102,7 +134,6 @@ const Dashboard = () => {
         try {
           const summary = await MutualFundCalculationService.calculateMutualFundSummary(kuveraTransactions);
           setMutualFundSummary(summary);
-          setRupeeInvestments(summary.totalCurrentValue);
           setInrMfvalue(summary.totalCurrentValue);
         } catch (error) {
           console.error('Error calculating mutual fund summary:', error);
@@ -322,7 +353,9 @@ const Dashboard = () => {
           )}
 
           {activeTab === 'inr-savings' && (
-            <InrSavingsDashboardPage
+            <InrSavingsDashboardPage 
+              savingsSummary={savingsSummary}
+              onSavingsUpdate={handleSavingsUpdate}
             />
           )}
           

@@ -1,33 +1,14 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { 
-  Plus,
-  TrendingUp, 
-  TrendingDown, 
-  PieChart, 
-  BarChart3, 
-  Activity, 
-  Target,
-  Calendar,
-  DollarSign,
-  Wallet,
-  ArrowUpRight,
-  ArrowDownRight,
-  Eye,
-  EyeOff,
-  Building2,
-  Shield,
-  Clock,
-  Edit,
-  Trash2,
-  X,
-  Check,
-  AlertCircle,
-  CreditCard
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+  Plus, TrendingUp, TrendingDown, PieChart, BarChart3, Activity, Target, Calendar,
+  DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield,
+  Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Area, AreaChart } from 'recharts';
 import LoadingScreen from '../../components/LoadingScreen';
+import SavingsCalculationService from '../../services/SavingsCalculationService';
 
-const InrSavingsDashboardPage = () => {
+const InrSavingsDashboardPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
   const [showBalance, setShowBalance] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -40,56 +21,9 @@ const InrSavingsDashboardPage = () => {
     maturityDate: '',
     description: ''
   });
-
-// Initialize with empty array to prevent undefined errors
-const [cashSavingsData, setCashSavingsData] = useState([]);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState(null);
-
-  // Fixed useEffect
-  useEffect(() => {
-    const loadMockData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Make sure the file path is correct - should match your public folder structure
-        const response = await fetch('/data/inr-savings.json');
-        
-        // Check if the response is successful
-        if (!response.ok) {
-          throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
-        }
-        
-        // Check if response is actually JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Response is not JSON');
-        }
-        
-        const data = await response.json();
-        
-        // Validate that data is an array
-        if (!Array.isArray(data)) {
-          throw new Error('Data is not an array');
-        }
-        
-        console.log('Loaded savings data:', data); // Debug log
-        setCashSavingsData(data);
-        
-      } catch (error) {
-        console.error('Failed to load savings data:', error);
-        setError(error.message);
-        
-        // Fallback to empty array
-        setCashSavingsData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMockData();
-  }, []);
+  const cashSavingsData = savingsSummary.savingsData || [];
+  const loading = false;
+  const error = savingsSummary.error;
 
   const accountTypes = [
     { value: 'Savings Account', label: 'Savings Account', icon: Building2 },
@@ -102,35 +36,16 @@ const [error, setError] = useState(null);
     { value: 'Cash', label: 'Cash in Hand', icon: Wallet }
   ];
 
-  // Calculate totals and analytics
-  const analytics = useMemo(() => {
-    const totalAmount = cashSavingsData.reduce((sum, item) => sum + item.amount, 0);
-    const avgInterestRate = cashSavingsData.reduce((sum, item) => sum + (item.interestRate || 0), 0) / cashSavingsData.length;
-    const totalInterestEarning = cashSavingsData.reduce((sum, item) => sum + (item.amount * (item.interestRate || 0) / 100), 0);
-    
-    // Group by type for allocation
-    const allocation = cashSavingsData.reduce((acc, item) => {
-      acc[item.type] = (acc[item.type] || 0) + item.amount;
-      return acc;
-    }, {});
+  // Use pre-calculated analytics from props
+  const analytics = useMemo(() => ({
+    totalAmount: savingsSummary.totalAmount || 0,
+    avgInterestRate: savingsSummary.avgInterestRate || 0,
+    totalInterestEarning: savingsSummary.totalInterestEarning || 0,
+    allocation: savingsSummary.allocation || [],
+    itemCount: savingsSummary.itemCount || 0
+  }), [savingsSummary]);
 
-    const allocationArray = Object.entries(allocation).map(([type, amount]) => ({
-      name: type,
-      value: amount,
-      percentage: (amount / totalAmount) * 100,
-      color: cashSavingsData.find(item => item.type === type)?.color || '#6B7280'
-    }));
-
-    return {
-      totalAmount,
-      avgInterestRate,
-      totalInterestEarning,
-      allocation: allocationArray,
-      itemCount: cashSavingsData.length
-    };
-  }, [cashSavingsData]);
-
-  // Monthly growth data (mock)
+  // Monthly growth data (mock) - keep same
   const monthlyData = [
     { month: 'Jun', amount: 980000 },
     { month: 'Jul', amount: 1020000 },
@@ -141,8 +56,9 @@ const [error, setError] = useState(null);
     { month: 'Dec', amount: 1155000 }
   ];
 
+  // Keep same formatting functions
   const formatCurrency = (amount) => {
-    if (!showBalance) return 'â‚¹â€¢â€¢â€¢â€¢â€¢â€¢';
+    if (!showBalance) return '₹••••••';
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -169,6 +85,7 @@ const [error, setError] = useState(null);
     return diffDays;
   };
 
+  // Keep same UI handlers
   const handleAddNew = () => {
     setFormData({
       type: '',
@@ -197,15 +114,17 @@ const [error, setError] = useState(null);
     setShowAddModal(true);
   };
 
+  // Update to use service and notify parent
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
-      setCashSavingsData(prev => prev.filter(item => item.id !== id));
+      const updatedSummary = SavingsCalculationService.deleteSavingsItem(cashSavingsData, id);
+      onSavingsUpdate(updatedSummary);
     }
   };
 
+  // Update to use service and notify parent
   const handleSubmit = (e) => {
     e.preventDefault();
-    
     const newItem = {
       id: editingItem ? editingItem.id : Date.now(),
       type: formData.type,
@@ -219,12 +138,13 @@ const [error, setError] = useState(null);
       addedDate: editingItem ? editingItem.addedDate : new Date().toISOString().split('T')[0]
     };
 
-    if (editingItem) {
-      setCashSavingsData(prev => prev.map(item => item.id === editingItem.id ? newItem : item));
-    } else {
-      setCashSavingsData(prev => [...prev, newItem]);
-    }
-
+    const updatedSummary = SavingsCalculationService.updateSavingsData(
+      cashSavingsData, 
+      newItem, 
+      !!editingItem
+    );
+    
+    onSavingsUpdate(updatedSummary);
     setShowAddModal(false);
   };
 
@@ -233,29 +153,23 @@ const [error, setError] = useState(null);
     return accountType ? accountType.icon : Building2;
   };
 
-    // Loading state
-  if (loading) {
+  // Keep all the existing UI exactly the same - just show error if needed
+  if (error) {
     return (
-      <LoadingScreen />  
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle size={64} className="mx-auto mb-4 text-red-400 opacity-50" />
+          <h2 className="text-xl mb-2 text-slate-300">Failed to load savings data</h2>
+          <p className="text-slate-400">{error}</p>
+        </div>
+      </div>
     );
   }
 
-  // Error state
-  if (error) {
+  // Loading state - keep same
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <p className="text-lg text-red-400 mb-4">Failed to load savings data</p>
-          <p className="text-gray-400 mb-6">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
+      <LoadingScreen />
     );
   }
 
