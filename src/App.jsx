@@ -14,6 +14,7 @@ import UsdCryptoPage from './pages/USD/UsdCryptoPage';
 import DataLoadingService from './services/DataLoadingService';
 import InvestmentCalculationService from './services/InvestmentCalculationService';
 import ExchangeRateService from './services/ExchangeRateService';
+import MutualFundCalculationService from './services/MutualFundCalculationService';
 
 import { 
   Home, 
@@ -54,6 +55,13 @@ const Dashboard = () => {
   const [rupeeInvestments, setRupeeInvestments] = useState(0);
   const [InrMfValue, setInrMfvalue] = useState(0);
   const [InrSavingsValue, setInrSavingsValue] = useState(0);
+  const [mutualFundSummary, setMutualFundSummary] = useState({
+    totalInvested: 0,
+    totalCurrentValue: 0,
+    totalProfitLoss: 0,
+    absoluteReturn: 0,
+    fundsData: []
+  });
 
 
   //Reviewed states for investments and transactions
@@ -86,6 +94,34 @@ const Dashboard = () => {
       note: "After payment"
     }
   ]);
+
+
+  useEffect(() => {
+    const calculateMutualFundSummary = async () => {
+      if (kuveraTransactions.length > 0) {
+        try {
+          const summary = await MutualFundCalculationService.calculateMutualFundSummary(kuveraTransactions);
+          setMutualFundSummary(summary);
+          setRupeeInvestments(summary.totalCurrentValue);
+          setInrMfvalue(summary.totalCurrentValue);
+        } catch (error) {
+          console.error('Error calculating mutual fund summary:', error);
+          // Fallback to basic calculation without API data
+          const basicSummary = {
+            totalInvested: 0,
+            totalCurrentValue: 0,
+            totalProfitLoss: 0,
+            absoluteReturn: 0,
+            xirrReturn: 0,
+            fundsData: []
+          };
+          setMutualFundSummary(basicSummary);
+        }
+      }
+    };
+
+    calculateMutualFundSummary();
+  }, [kuveraTransactions]);
 
   // Fetch exchange rates
   useEffect(() => {
@@ -131,7 +167,6 @@ const Dashboard = () => {
       const kuveraData = await DataLoadingService.loadKuveraData();
       if (kuveraData.success) {
         setKuveraTransactions(kuveraData.transactions);
-        setRupeeInvestments(kuveraData.totalValue);
         console.log('Initial Kuvera file loaded successfully');
       }
 
@@ -182,7 +217,6 @@ const Dashboard = () => {
       const result = await DataLoadingService.processKuveraFile(selectedFile);
       
       setKuveraTransactions(result.transactions);
-      setRupeeInvestments(result.totalValue);
       setActiveTab("inr-mutual-funds");
       setBrokerType("Kuvera");
     } catch (error) {
@@ -283,7 +317,7 @@ const Dashboard = () => {
           {activeTab === 'inr-mutual-funds' && (
             <InrMutualFunds 
               transactions={kuveraTransactions} 
-              onTotalMarketValue={setRupeeInvestments} 
+              mutualFundSummary={mutualFundSummary}
             />
           )}
 

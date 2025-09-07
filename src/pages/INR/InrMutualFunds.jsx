@@ -1,10 +1,28 @@
-import React, { useState, useEffect, useMemo, useReducer } from 'react';
-import { Search, TrendingUp, TrendingDown, AlertCircle, Loader2, Download, Filter, SortAsc, SortDesc, BarChart3, List, ChartNoAxesCombined, HandCoins } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
+import { Search, TrendingUp, TrendingDown, AlertCircle, Loader2, Download, Filter, SortAsc, SortDesc, BarChart3, List, ChartNoAxesCombined, HandCoins, Building2, PiggyBank, LineChart } from 'lucide-react';
 import LoadingScreen from '../../components/LoadingScreen';
 
-const CACHE_KEY_MARKET_VALUES = 'kuveraMarketValues';
-const CACHE_KEY_MARKET_VALUES_TIMESTAMP = 'kuveraMarketValuesTimestamp';
-const CACHE_EXPIRY_MS = 60 * 60 * 1000;
+// Fund Badge Component
+const FundBadge = ({ fundName }) => {
+  const getBadgeInfo = (name) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('large') || lowerName.includes('nifty')) return { text: 'Large Cap', color: 'from-blue-500 to-blue-600' };
+    if (lowerName.includes('mid')) return { text: 'Mid Cap', color: 'from-green-500 to-green-600' };
+    if (lowerName.includes('small')) return { text: 'Small Cap', color: 'from-orange-500 to-orange-600' };
+    if (lowerName.includes('hybrid')) return { text: 'Hybrid', color: 'from-purple-500 to-purple-600' };
+    if (lowerName.includes('debt') || lowerName.includes('bond')) return { text: 'Debt', color: 'from-gray-500 to-gray-600' };
+    if (lowerName.includes('equity')) return { text: 'Equity', color: 'from-emerald-500 to-emerald-600' };
+    return { text: 'Fund', color: 'from-indigo-500 to-indigo-600' };
+  };
+
+  const { text, color } = getBadgeInfo(fundName);
+  
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full bg-gradient-to-r ${color} text-white text-xs font-semibold shadow-sm`}>
+      {text}
+    </span>
+  );
+};
 
 // Action types for reducer
 const ACTIONS = {
@@ -21,7 +39,7 @@ const ACTIONS = {
 const initialState = {
   fundCodes: {},
   marketValues: {},
-  loading: true,
+  loading: false,
   error: null,
   searchTerm: '',
   sortBy: 'marketValue',
@@ -51,78 +69,105 @@ const transactionsReducer = (state, action) => {
   }
 };
 
-const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
+const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
   const [state, dispatch] = useReducer(transactionsReducer, initialState);
   const [selectedFund, setSelectedFund] = useState('');
   const [showTransactions, setShowTransactions] = useState(false);
-  const [returnType, setReturnType] = useState('xirr'); // 'absolute' or 'xirr'
+  const [returnType, setReturnType] = useState('xirr');
+  
+  // Refs for optimization
+  const prevTotalMarketValue = useRef(null);
 
-  const calculateXIRR = (transactions, currentValues) => {
-    const cashFlows = [];
+  // Use pre-calculated data from mutualFundSummary
+  const processedData = useMemo(() => {
+    const summary = mutualFundSummary || {};
+    const fundsData = summary.fundsData || [];
     
-    transactions.forEach(transaction => {
-      const date = new Date(transaction["Date"] || Object.values(transaction)[0]);
-      const orderType = (transaction["Order"] || Object.values(transaction)[3] || 'BUY').toUpperCase();
-      const amount = parseFloat(transaction["Amount (INR)"] || Object.values(transaction)[7] || 0);
-      
-      const cashFlow = orderType === 'SELL' || orderType === 'REDEEM' ? amount : -amount;
-      
-      cashFlows.push({
-        date: date,
-        amount: cashFlow
-      });
-    });
-    
-    if (currentValues > 0) {
-      cashFlows.push({
-        date: new Date(),
-        amount: currentValues
-      });
-    }
-    
-    if (cashFlows.length < 2) return 0;
-    
-    cashFlows.sort((a, b) => a.date - b.date);
-    
-    const npv = (rate) => {
-      const baseDate = cashFlows[0].date;
-      let total = 0;
-      
-      cashFlows.forEach(cf => {
-        const years = (cf.date - baseDate) / (365.25 * 24 * 60 * 60 * 1000);
-        total += cf.amount / Math.pow(1 + rate, years);
-      });
-      
-      return total;
+    return {
+      fundGroups: fundsData.reduce((acc, fund) => {
+        acc[fund.fund] = fund;
+        return acc;
+      }, {}),
+      totals: {
+        totalInvested: summary.totalInvested || 0,
+        totalCurrentValue: summary.totalCurrentValue || 0,
+        totalProfitLoss: summary.totalProfitLoss || 0,
+        absoluteReturn: summary.absoluteReturn || 0,
+        xirrReturn: summary.xirrReturn || 0
+      },
+      fundsArray: fundsData
     };
-    
-    let rate = 0.1;
-    const tolerance = 1e-6;
-    const maxIterations = 100;
-    
-    for (let i = 0; i < maxIterations; i++) {
-      const fValue = npv(rate);
-      const fDerivative = (npv(rate + tolerance) - fValue) / tolerance;
+  }, [mutualFundSummary]);
+
+  // Filter and sort the funds data
+  const filteredAndSortedData = useMemo(() => {
+    let filtered = processedData.fundsArray || [];
+
+    // Apply search filter
+    if (state.searchTerm) {
+      filtered = filtered.filter(fund =>
+        fund.fund.toLowerCase().includes(state.searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply profit/loss filter
+    if (state.filterBy === 'profit') {
+      filtered = filtered.filter(fund => (fund.profitLoss || 0) > 0);
+    } else if (state.filterBy === 'loss') {
+      filtered = filtered.filter(fund => (fund.profitLoss || 0) < 0);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
       
-      if (Math.abs(fValue) < tolerance || fDerivative === 0) break;
-      
-      const newRate = rate - fValue / fDerivative;
-      
-      if (Math.abs(newRate - rate) < tolerance) {
-        return newRate;
+      switch (state.sortBy) {
+        case 'fund':
+          aValue = a.fund;
+          bValue = b.fund;
+          break;
+        case 'units':
+          aValue = a.totalUnits;
+          bValue = b.totalUnits;
+          break;
+        case 'invested':
+          aValue = a.totalAmount;
+          bValue = b.totalAmount;
+          break;
+        case 'marketValue':
+          aValue = a.currentValue;
+          bValue = b.currentValue;
+          break;
+        case 'profitLoss':
+          aValue = a.profitLoss;
+          bValue = b.profitLoss;
+          break;
+        case 'profitLossPercent':
+          aValue = returnType === 'absolute' ? a.profitLossPercent : a.xirrPercent;
+          bValue = returnType === 'absolute' ? b.profitLossPercent : b.xirrPercent;
+          break;
+        default:
+          aValue = a.currentValue;
+          bValue = b.currentValue;
+      }
+
+      if (typeof aValue === 'string') {
+        return state.sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       }
       
-      rate = newRate;
-    }
-    
-    return rate;
-  };
+      return state.sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    });
 
-  // XIRR calculation for individual funds
-  const calculateFundXIRR = (fundTransactions, currentValue) => {
-    if (!fundTransactions || fundTransactions.length === 0) return 0;
-    return calculateXIRR(fundTransactions, currentValue);
-  };
+    return filtered;
+  }, [processedData.fundsArray, state.searchTerm, state.filterBy, state.sortBy, state.sortDirection, returnType]);
+
+  // Get selected fund data
+  const selectedFundData = useMemo(() => {
+    if (!selectedFund || !processedData.fundGroups[selectedFund]) {
+      return null;
+    }
+    return processedData.fundGroups[selectedFund];
+  }, [selectedFund, processedData.fundGroups]);
 
   // Utility functions
   const formatCurrency = (amount) => {
@@ -131,316 +176,47 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
       currency: 'INR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount || 0);
   };
 
   const formatPercent = (percent) => {
-    return `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
+    return `${percent >= 0 ? '+' : ''}${(percent || 0).toFixed(2)}%`;
   };
 
-  const SortIcon = ({ column }) => {
-    if (state.sortBy !== column) return <SortAsc className="w-4 h-4 opacity-50" />;
+  const SortIcon = ({ columnKey }) => {
+    if (state.sortBy !== columnKey) return <SortAsc className="w-4 h-4 opacity-50" />;
     return state.sortDirection === 'asc' ? 
       <SortAsc className="w-4 h-4 text-blue-400" /> : 
       <SortDesc className="w-4 h-4 text-blue-400" />;
   };
 
-  // Fetch fund codes from JSON file once mount
-  useEffect(() => {
-    const fetchFundCodes = async () => {
-      try {
-        const response = await fetch('/data/KuveraCode.json');
-        if (!response.ok) throw new Error(`Network error: ${response.statusText}`);
-        const data = await response.json();
-        dispatch({ type: ACTIONS.SET_FUND_CODES, payload: data });
-        console.log('Fund codes loaded:', data);
-      } catch (error) {
-        console.error('Error fetching fund codes:', error);
-        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load fund codes' });
-      }
-    };
-    
-    fetchFundCodes();
-  }, []);
-
-  // Fetch market values with caching
-  useEffect(() => {
-    if (!state.fundCodes || Object.keys(state.fundCodes).length === 0) return;
-
-    const cachedValues = localStorage.getItem(CACHE_KEY_MARKET_VALUES);
-    const cachedTimestamp = localStorage.getItem(CACHE_KEY_MARKET_VALUES_TIMESTAMP);
-    const now = Date.now();
-    const isCacheValid = cachedValues && cachedTimestamp && 
-      now - parseInt(cachedTimestamp, 10) < CACHE_EXPIRY_MS;
-
-    if (isCacheValid) {
-      const parsedValues = JSON.parse(cachedValues);
-      dispatch({ type: ACTIONS.SET_MARKET_VALUES, payload: parsedValues });
-      console.log('Using cached market values');
-      if (onTotalMarketValue) {
-        const totalValue = Object.values(parsedValues).reduce(
-          (acc, val) => acc + parseFloat(val || 0), 0
-        );
-        onTotalMarketValue(totalValue);
-      }
-      return;
-    }
-
-    const fetchMarketValues = async () => {
-      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
-      const values = {};
-      
-      for (const [fund, code] of Object.entries(state.fundCodes)) {
-        try {
-          const response = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
-          if (response.ok) {
-            const data = await response.json();
-            const nav = data?.data?.[0]?.nav;
-            if (nav) {
-              values[fund] = parseFloat(nav);
-              console.log(`Fetched NAV for ${fund} (${code}):`, nav);
-            }
-          } else {
-            console.error(`Failed to fetch NAV for ${fund} (${code}):`, response.status);
-          }
-        } catch (error) {
-          console.error(`Error fetching NAV for ${fund} (${code}):`, error);
-        }
-      }
-
-      dispatch({ type: ACTIONS.SET_MARKET_VALUES, payload: values });
-      localStorage.setItem(CACHE_KEY_MARKET_VALUES, JSON.stringify(values));
-      localStorage.setItem(CACHE_KEY_MARKET_VALUES_TIMESTAMP, now.toString());
-      
-      if (onTotalMarketValue) {
-        const totalValue = Object.values(values).reduce(
-          (acc, val) => acc + parseFloat(val || 0), 0
-        );
-        onTotalMarketValue(totalValue);
-      }
-    };
-
-  fetchMarketValues();
-}, [state.fundCodes, onTotalMarketValue]);
-
-
-  // Process and group transactions
-  const processedData = useMemo(() => {
-    const fundMap = new Map();
-
-    transactions.forEach(transaction => {
-      const fundName = transaction["Name of the Fund"] || Object.values(transaction)[2] || 'Unknown Fund';
-      const orderType = (transaction["Order"] || Object.values(transaction)[3] || 'BUY').toUpperCase();
-      const units = parseFloat(transaction["Units"] || Object.values(transaction)[4] || 0);
-      const amount = parseFloat(transaction["Amount (INR)"] || Object.values(transaction)[7] || 0);
-      const nav = parseFloat(transaction['NAV']) || 0;
-
-      if (!fundMap.has(fundName)) {
-        fundMap.set(fundName, {
-          fund: fundName,
-          totalUnits: 0,
-          totalAmount: 0,
-          weightedNavSum: 0,
-          rows: []
-        });
-      }
-
-      const fundData = fundMap.get(fundName);
-      fundData.rows.push(transaction);
-
-      // Handle BUY and SELL transactions differently
-      if (orderType === 'SELL' || orderType === 'REDEEM') {
-        // For SELL orders: subtract units and amount
-        fundData.totalUnits -= units;
-        fundData.totalAmount -= amount;
-        fundData.weightedNavSum -= (units * nav); 
-      } else {
-        // For BUY orders: add units and amount (default behavior)
-        fundData.totalUnits += units;
-        fundData.totalAmount += amount;
-        fundData.weightedNavSum += (units * nav);
-      }
-    });
-
-    return Array.from(fundMap.values())
-      .filter(fund => fund.totalUnits > 0.0001) // Filter out funds with zero or near-zero quantities
-      .map(fund => {
-        const marketValue = state.marketValues[fund.fund] || 0;
-        const currentValue = marketValue * fund.totalUnits;
-        const profitLoss = currentValue - fund.totalAmount;
-        const profitLossPercent = fund.totalAmount > 0 ? (profitLoss / fund.totalAmount) * 100 : 0;
-        const xirrPercent = calculateFundXIRR(fund.rows, currentValue) * 100;
-        const avgNav = fund.totalUnits > 0 ? fund.weightedNavSum / fund.totalUnits : 0;
-
-        return {
-          ...fund,
-          marketValue,
-          currentValue,
-          profitLoss,
-          profitLossPercent,
-          xirrPercent,
-          avgNav
-        };
-      });
-  }, [transactions, state.marketValues]);
-
-
-  // Apply search and filter
-  const filteredData = useMemo(() => {
-    let filtered = processedData;
-
-    if (state.searchTerm) {
-      filtered = filtered.filter(item =>
-        item.fund.toLowerCase().includes(state.searchTerm.toLowerCase())
-      );
-    }
-
-    if (state.filterBy === 'profit') {
-      filtered = filtered.filter(item => item.profitLoss > 0);
-    } else if (state.filterBy === 'loss') {
-      filtered = filtered.filter(item => item.profitLoss < 0);
-    }
-
-    return filtered;
-  }, [processedData, state.searchTerm, state.filterBy]);
-
-  // Apply sorting
-  const sortedData = useMemo(() => {
-    return [...filteredData].sort((a, b) => {
-      let aVal, bVal;
-      
-      switch (state.sortBy) {
-        case 'fund':
-          aVal = a.fund;
-          bVal = b.fund;
-          break;
-        case 'invested':
-          aVal = a.totalAmount;
-          bVal = b.totalAmount;
-          break;
-        case 'marketValue':
-          aVal = a.currentValue;
-          bVal = b.currentValue;
-          break;
-        case 'profitLoss':
-          aVal = a.profitLoss;
-          bVal = b.profitLoss;
-          break;
-        case 'profitLossPercent':
-          aVal = returnType === 'absolute' ? a.profitLossPercent : a.xirrPercent;
-          bVal = returnType === 'absolute' ? b.profitLossPercent : b.xirrPercent;
-          break;
-        case 'xirrPercent':
-          aVal = returnType === 'absolute' ? a.profitLossPercent : a.xirrPercent;
-          bVal = returnType === 'absolute' ? b.profitLossPercent : b.xirrPercent;
-          break;
-        default:
-          return 0;
-      }
-
-      if (typeof aVal === 'string') {
-        return state.sortDirection === 'asc' 
-          ? aVal.localeCompare(bVal) 
-          : bVal.localeCompare(aVal);
-      }
-      
-      return state.sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-    });
-  }, [filteredData, state.sortBy, state.sortDirection]);
-
-  // Calculate totals
-  const totals = useMemo(() => {
-    const totalInvested = processedData.reduce((acc, fund) => acc + fund.totalAmount, 0);
-    const totalCurrentValue = processedData.reduce((acc, fund) => acc + fund.currentValue, 0);
-    const totalProfitLoss = totalCurrentValue - totalInvested;
-    const absoluteReturn = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
-    const xirrReturn = calculateXIRR(transactions, totalCurrentValue) * 100;
-    
-    return {
-      totalInvested,
-      totalCurrentValue,
-      totalProfitLoss,
-      absoluteReturn,
-      xirrReturn
-    };
-  }, [processedData, transactions]);
-
-
-  // Get selected fund's transactions
-  const selectedFundData = useMemo(() => {
-    if (!selectedFund) return null;
-    return processedData.find(fund => fund.fund === selectedFund);
-  }, [selectedFund, processedData]);
-
-  // Get unique fund names for dropdown
-  const fundNames = useMemo(() => {
-    return processedData.map(fund => fund.fund).sort();
-  }, [processedData]);
-
-  // Notify parent of total market value
-  useEffect(() => {
-    if (onTotalMarketValue) {
-      onTotalMarketValue(totals.totalCurrentValue);
-    }
-  }, [totals.totalCurrentValue, onTotalMarketValue]);
-
   // Event handlers
   const handleSort = (column) => {
+    let sortColumn = column;
+    if (column === 'profitLossPercent' || column === 'xirrPercent') {
+      sortColumn = 'profitLossPercent';
+    }
+    
     dispatch({
       type: ACTIONS.SET_SORT,
       payload: {
-        sortBy: column,
-        sortDirection: state.sortBy === column && state.sortDirection === 'desc' ? 'asc' : 'desc'
+        sortBy: sortColumn,
+        sortDirection: state.sortBy === sortColumn && state.sortDirection === 'desc' ? 'asc' : 'desc'
       }
     });
   };
 
-  const handleSearch = (e) => {
-    dispatch({ type: ACTIONS.SET_SEARCH, payload: e.target.value });
-  };
-
-  const handleFilter = (filter) => {
-    dispatch({ type: ACTIONS.SET_FILTER, payload: filter });
-  };
-
-  // Fund Badge Component - Add this near the top of your component
-  const getFundBadge = (fundName) => {
-    const name = fundName.toLowerCase();
-    
-    if (name.includes('nifty 50')) {
-      return <span className="ml-1 bg-indigo-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">NIFTY 50</span>;
-    }
-    if (name.includes('nifty next 50')) {
-      return <span className="ml-1 bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">NIFTY Next 50</span>;
-    }
-    if (name.includes('small cap')) {
-      return <span className="ml-1 bg-red-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">Small Cap</span>;
-    }
-    if (name.includes('midcap') || name.includes('mid cap')) {
-      return <span className="ml-1 bg-green-600 text-white rounded-full px-2 py-0.5 text-xs font-bold">Mid Cap</span>;
-    }
-    if (name.includes('flexi cap') || name.includes('multi cap')) {
-      return <span className="ml-1 bg-pink-500 text-black rounded-full px-2 py-0.5 text-xs font-bold">Flexi Cap</span>;
-    }
-    if (name.includes('s&p 500') || name.includes('us total')) {
-      return <span className="ml-1 bg-yellow-500 text-black rounded-full px-2 py-0.5 text-xs font-bold">US Equity</span>;
-    }
-    return null;
-  };
-
-  // Export to CSV
   const exportToCSV = () => {
-    const headers = ['Fund Name', 'Units', 'NAV', 'Invested Amount', 'Current Value', 'Profit/Loss', 'P/L %'];
+    const headers = ['Fund Name', 'Units', 'Net Investment', 'Market Value', 'Profit/Loss', 'P/L %'];
     const csvContent = [
       headers.join(','),
-      ...sortedData.map(row => [
+      ...filteredAndSortedData.map(row => [
         `"${row.fund}"`,
-        row.totalUnits.toFixed(2),
-        row.marketValue.toFixed(2),
-        row.totalAmount.toFixed(2),
-        row.currentValue.toFixed(2),
-        row.profitLoss.toFixed(2),
-        row.profitLossPercent.toFixed(2)
+        (row.totalUnits || 0).toFixed(4),
+        (row.totalAmount || 0).toFixed(2),
+        (row.currentValue || 0).toFixed(2),
+        (row.profitLoss || 0).toFixed(2),
+        (returnType === 'absolute' ? row.profitLossPercent : row.xirrPercent || 0).toFixed(2)
       ].join(','))
     ].join('\n');
 
@@ -448,21 +224,23 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'kuvera_portfolio_summary.csv';
+    a.download = 'inr_mutual_funds_portfolio_summary.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
+  const { totals } = processedData;
+
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
         <div className="bg-gray-800 border border-gray-700 rounded-xl p-12 text-center max-w-md shadow-2xl">
           <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
-            <TrendingUp className="w-10 h-10 text-gray-400" />
+            <HandCoins className="w-10 h-10 text-gray-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-4">No Transactions Found</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">No Mutual Fund Transactions Found</h2>
           <p className="text-gray-400 leading-relaxed">
-            Upload your Kuvera transactions CSV file to view your portfolio summary and track your investments.
+            Upload your Kuvera mutual fund transactions CSV file to view your portfolio summary.
           </p>
         </div>
       </div>
@@ -471,13 +249,13 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
 
   if (state.error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center p-4">
         <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-8 text-center max-w-md">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">Error Loading Data</h3>
           <p className="text-gray-300 mb-4">{state.error}</p>
           <button
-            onClick={fetchMarketData}
+            onClick={() => window.location.reload()}
             className="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors"
           >
             Retry
@@ -493,7 +271,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-            Mutual Funds Dashboard
+            INR Mutual Funds Portfolio Dashboard
           </h1>
           <p className="text-gray-400">Track your mutual fund investments and performance</p>
         </div>
@@ -501,39 +279,45 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Total Invested Card */}
-          <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-6 rounded-2xl shadow-xl transform hover:shadow-2xl transition-all duration-300">
+          <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-6 rounded-2xl shadow-xl transform hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-cyan-100 text-sm font-medium uppercase tracking-wide">Total Invested</h3>
-                <p className="text-white font-bold text-3xl mt-2">{formatCurrency(totals.totalInvested)}</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <PiggyBank size={20} className="text-blue-200" />
+                  <h3 className="text-blue-100 text-sm font-medium uppercase tracking-wide">Net Investment</h3>
+                </div>
+                <p className="text-white font-bold text-3xl">{formatCurrency(totals.totalInvested)}</p>
               </div>
-              <div className="text-cyan-200 bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-                <HandCoins size={28} />
+              <div className="text-blue-200 bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                <PiggyBank size={32} />
               </div>
             </div>
           </div>
 
           {/* Current Value Card */}
-          <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-6 rounded-2xl shadow-xl transform hover:shadow-2xl transition-all duration-300">
+          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 rounded-2xl shadow-xl transform hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-violet-100 text-sm font-medium uppercase tracking-wide">Current Value</h3>
-                <p className="text-white font-bold text-3xl mt-2">{formatCurrency(totals.totalCurrentValue)}</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <LineChart size={20} className="text-purple-200" />
+                  <h3 className="text-purple-100 text-sm font-medium uppercase tracking-wide">Market Value</h3>
+                </div>
+                <p className="text-white font-bold text-3xl">{formatCurrency(totals.totalCurrentValue)}</p>
               </div>
-              <div className="text-violet-200 bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-                <ChartNoAxesCombined size={28} />
+              <div className="text-purple-200 bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                <LineChart size={32} />
               </div>
             </div>
           </div>
 
           {/* Profit/Loss Card with Toggle */}
           <div className={`${totals.totalProfitLoss >= 0
-            ? 'bg-gradient-to-r from-emerald-500 to-green-600'
-            : 'bg-gradient-to-r from-rose-500 to-red-600'
+            ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+            : 'bg-gradient-to-r from-red-500 to-rose-600'
           } p-6 rounded-2xl shadow-xl transform hover:shadow-2xl transition-all duration-300`}>
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h3 className={`${totals.totalProfitLoss >= 0 ? 'text-emerald-100' : 'text-rose-100'} text-sm font-medium uppercase tracking-wide`}>
+                <h3 className={`${totals.totalProfitLoss >= 0 ? 'text-green-100' : 'text-red-100'} text-sm font-medium uppercase tracking-wide`}>
                   Total P&L
                 </h3>
                 <p className="text-white font-bold text-3xl mt-2">{formatCurrency(totals.totalProfitLoss)}</p>
@@ -542,8 +326,8 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                 <div className="mt-3">
                   <div className={`${
                     (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 
-                      ? 'bg-emerald-900/60 border-emerald-300/30' 
-                      : 'bg-rose-900/60 border-rose-300/30'
+                      ? 'bg-green-900/60 border-green-300/30' 
+                      : 'bg-red-900/60 border-red-300/30'
                   } backdrop-blur-sm px-4 py-2 rounded-xl border inline-flex items-center gap-2`}>
                     <span className="text-white text-sm font-medium">
                       {returnType === 'absolute' ? 'Absolute:' : 'XIRR:'}
@@ -559,13 +343,11 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                 </div>
               </div>
               
-              <div className={`${totals.totalProfitLoss >= 0 ? 'text-emerald-200' : 'text-rose-200'} bg-white/20 p-3 rounded-xl backdrop-blur-sm`}>
+              <div className={`${totals.totalProfitLoss >= 0 ? 'text-green-200' : 'text-red-200'} bg-white/20 p-3 rounded-xl backdrop-blur-sm`}>
                 {totals.totalProfitLoss >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
               </div>
             </div>
           </div>
-
-
         </div>
         
         {/* Compact Filter Controls */}
@@ -643,7 +425,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
 
           {/* Export Button */}
           <button
-            onClick={() => {exportToCSV();}}
+            onClick={exportToCSV}
             className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
           >
             <Download size={16} />
@@ -657,180 +439,161 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
         )}
 
         {/* Portfolio Table */}
-        {!state.loading && (
-        <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden mb-12">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-slate-700/70 bg-slate-900/80">
-                  {/* Fund Name Column */}
-                  <th 
-                    className="group px-6 py-5 text-left text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                    onClick={() => handleSort('fund')}
-                  >
-                    <span className="inline-flex items-center">
-                      Fund Name
-                      <SortIcon column="fund" />
-                    </span>
-                  </th>
-
-                  {/* Units Column */}
-                  <th 
-                    className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                    onClick={() => handleSort('units')}
-                  >
-                    <span className="inline-flex items-center justify-end w-full">
-                      Units
-                      <SortIcon column="units" />
-                    </span>
-                  </th>
-
-                  {/* Net Invested Column */}
-                  <th 
-                    className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                    onClick={() => handleSort('invested')}
-                  >
-                    <span className="inline-flex items-center justify-end w-full">
-                      Net Invested
-                      <SortIcon column="invested" />
-                    </span>
-                  </th>
-
-                  {/* Market Value Column */}
-                  <th 
-                    className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                    onClick={() => handleSort('marketValue')}
-                  >
-                    <span className="inline-flex items-center justify-end w-full">
-                      Market Value
-                      <SortIcon column="marketValue" />
-                    </span>
-                  </th>
-
-                  {/* Profit/Loss Column */}
-                  <th 
-                    className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                    onClick={() => handleSort('profitLoss')}
-                  >
-                    <span className="inline-flex items-center justify-end w-full">
-                      Profit/Loss ({returnType === 'absolute' ? 'Absolute' : 'XIRR'})
-                      <SortIcon column="profitLoss" />
-                    </span>
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {sortedData.map((fund, index) => (
-                  <tr 
-                    key={fund.fund} 
-                    className="border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
-                  >
-                    {/* Fund Name - Two Line Format */}
-                    <td className="px-6 py-5">
-                      <div className="font-semibold text-white text-base max-w-xs">
-                        {fund.fund.length > 40 ? fund.fund.substring(0, 40) + '...' : fund.fund}
-                      </div>
-                      <div className="mt-2">
-                        {getFundBadge(fund.fund)}
-                      </div>
-                    </td>
-
-                    {/* Units - Two Line Format */}
-                    <td className="px-6 py-5 text-right">
-                      <div className="text-slate-200 font-semibold text-base">
-                        {Number(fund.totalUnits).toFixed(2)}
-                      </div>
-                    </td>
-
-                    {/* Net Invested - Two Line Format */}
-                    <td className="px-6 py-5 text-right">
-                      <div className="text-slate-200 font-semibold text-base">
-                        {formatCurrency(fund.totalAmount)}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1 font-medium">
-                         ₹{fund.avgNav.toFixed(2)}
-                      </div>
-                    </td>
-
-                    {/* Market Value - Two Line Format */}
-                    <td className="px-6 py-5 text-right">
-                      <div className="text-slate-200 font-semibold text-base">
-                        {formatCurrency(fund.currentValue)}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1 font-medium">
-                        ₹{fund.marketValue.toFixed(2)}
-                      </div>
-                    </td>
-
-                    {/* Profit/Loss - Two Line Format */}
-                    <td className="px-6 py-5 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <span className={`font-bold text-base ${fund.profitLoss >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {formatCurrency(fund.profitLoss)}
-                        </span>
-                        {fund.profitLoss >= 0 ? (
-                          <TrendingUp className="w-5 h-5 text-emerald-400 hover:scale-110 transition-transform duration-200" />
-                        ) : fund.profitLoss < 0 ? (
-                          <TrendingDown className="w-5 h-5 text-red-400 hover:scale-110 transition-transform duration-200" />
-                        ) : null}
-                      </div>
-                      <div className={`text-xs mt-1 font-semibold ${
-                        (returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent) >= 0 
-                          ? 'text-emerald-400' 
-                          : (returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent) < 0 
-                            ? 'text-red-400' 
-                            : 'text-slate-400'
-                      }`}>
-                        {formatPercent(returnType === 'absolute' ? fund.profitLossPercent : fund.xirrPercent)}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-
-              {/* Footer with totals */}
-              <tfoot>
-                <tr className="border-t-2 border-blue-500/30 bg-gradient-to-r from-slate-900 to-slate-800">
-                  <td className="px-6 py-5 text-left text-white font-bold text-lg">
-                    Total Portfolio
-                  </td>
-                  <td className="px-6 py-5 text-right"></td>
-                  <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
-                    {formatCurrency(totals.totalInvested)}
-                  </td>
-                  <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
-                    {formatCurrency(totals.totalCurrentValue)}
-                  </td>
-                  <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
-                    <div className={totals.totalProfitLoss >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                      {formatCurrency(totals.totalProfitLoss)}
-                    </div>
-                    <div className={
-                      (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 
-                        ? 'text-emerald-400' 
-                        : 'text-red-400'
-                    }>
-                      {formatPercent(returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn)}
-                    </div>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+        {!state.loading && filteredAndSortedData.length > 0 && (
+          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8">
+            <div className="max-w-7xl mx-auto">              
+              <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-slate-700/70 bg-slate-900/80">
+                        <th
+                          className="group px-6 py-5 text-left text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                          onClick={() => handleSort('fund')}
+                        >
+                          <span className="inline-flex items-center">
+                            Fund Name
+                            <SortIcon columnKey="fund" />
+                          </span>
+                        </th>
+                        <th
+                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                          onClick={() => handleSort('units')}
+                        >
+                          <span className="inline-flex items-center justify-end w-full">
+                            Units
+                            <SortIcon columnKey="units" />
+                          </span>
+                        </th>
+                        <th
+                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                          onClick={() => handleSort('invested')}
+                        >
+                          <span className="inline-flex items-center justify-end w-full">
+                            Net Invested
+                            <SortIcon columnKey="invested" />
+                          </span>
+                        </th>
+                        <th
+                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                          onClick={() => handleSort('marketValue')}
+                        >
+                          <span className="inline-flex items-center justify-end w-full">
+                            Market Value
+                            <SortIcon columnKey="marketValue" />
+                          </span>
+                        </th>
+                        <th
+                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                          onClick={() => handleSort('profitLoss')}
+                        >
+                          <span className="inline-flex items-center justify-end w-full">
+                            Profit / Loss
+                            <SortIcon columnKey="profitLoss" />
+                          </span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAndSortedData.map((fund, index) => (
+                        <tr 
+                          key={index} 
+                          className="border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                        >
+                          <td className="px-6 py-5">
+                            <div className="font-semibold text-white text-base mb-1">
+                              {fund.fund.length > 50 ? fund.fund.substring(0, 50) + '...' : fund.fund}
+                            </div>
+                            <div className="mt-2">
+                              <FundBadge fundName={fund.fund} />
+                            </div>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="text-slate-200 font-semibold text-base">
+                              {Number(fund.totalUnits || 0).toFixed(2)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="text-slate-200 font-semibold text-base">
+                              {formatCurrency(fund.totalAmount)}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1 font-medium">
+                              ₹{((fund.avgNav || 0)).toFixed(2)} avg
+                            </div>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="text-slate-200 font-semibold text-base">
+                              {formatCurrency(fund.currentValue)}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1 font-medium">
+                              ₹{((fund.marketValue || 0)).toFixed(2)} NAV
+                            </div>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <span className={`font-bold text-base ${
+                                (fund.profitLoss || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                              }`}>
+                                {formatCurrency(fund.profitLoss)}
+                              </span>
+                              {(fund.profitLoss || 0) > 0 ? (
+                                <TrendingUp className="w-5 h-5 text-emerald-400 hover:scale-110 transition-transform duration-200" />
+                              ) : (fund.profitLoss || 0) < 0 ? (
+                                <TrendingDown className="w-5 h-5 text-red-400 hover:scale-110 transition-transform duration-200" />
+                              ) : null}
+                            </div>
+                            <div className={`text-xs mt-1 font-semibold ${
+                              (fund.profitLoss || 0) > 0
+                                ? 'text-emerald-400'
+                                : (fund.profitLoss || 0) < 0
+                                ? 'text-red-400'
+                                : 'text-slate-400'
+                            }`}>
+                              {((returnType === "absolute"
+                                ? fund.profitLossPercent
+                                : fund.xirrPercent) || 0
+                              ).toFixed(2)}%
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-blue-500/30 bg-gradient-to-r from-slate-900 to-slate-800">
+                        <td className="px-6 py-5 text-left text-white font-bold text-lg">
+                          Total Portfolio
+                        </td>
+                        <td className="px-6 py-5 text-right"></td>
+                        <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
+                          {formatCurrency(totals.totalInvested)}
+                        </td>
+                        <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
+                          {formatCurrency(totals.totalCurrentValue)}
+                        </td>
+                        <td className={`px-6 py-5 text-right font-bold text-lg ${
+                          totals.totalProfitLoss >= 0 ? "text-emerald-400" : "text-red-400"
+                        }`}>
+                          {formatCurrency(totals.totalProfitLoss)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
         )}
 
         {/* No Results */}
-        {!state.loading && sortedData.length === 0 && (
+        {!state.loading && filteredAndSortedData.length === 0 && processedData.fundsArray.length > 0 && (
           <div className="text-center py-12">
             <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">No funds match your current filters</p>
           </div>
         )}
 
-        {/* Individual Transactions Section */}
-        <div className="mt-8 bg-slate-900/60 rounded-2xl p-6 border border-gray-700">
+        {/* Individual Fund Transactions Section */}
+        <div className="mt-8 bg-gray-800 rounded-2xl p-6 border border-gray-700">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               <BarChart3 size={24} />
@@ -844,14 +607,14 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                 value={selectedFund}
                 onChange={(e) => {
                   setSelectedFund(e.target.value);
-                  setShowTransactions(true); // Auto-show transactions when fund is selected
+                  setShowTransactions(true);
                 }}
                 className="flex-1 lg:min-w-80 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Choose a fund to view transactions...</option>
-                {processedData.map((fund) => (
-                  <option key={fund.fund} value={fund.fund}>
-                    {fund.fund}
+                {filteredAndSortedData.map((fund, index) => (
+                  <option key={index} value={fund.fund}>
+                    {fund.fund.length > 60 ? fund.fund.substring(0, 60) + '...' : fund.fund}
                   </option>
                 ))}
               </select>
@@ -860,27 +623,30 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
 
           {selectedFund && selectedFundData ? (
             <div className="space-y-6">
-              {/* Fund Summary Cards - Improved Layout */}
+              {/* Fund Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 
-                {/* Total Units */}
-                <div className="bg-slate-900/60 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Total Units</h4>
-                  <p className="text-white text-xl font-bold">{selectedFundData.totalUnits.toFixed(2)}</p>
-                </div>
-
-                {/* Current NAV */}
-                <div className="bg-slate-900/60 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Avg NAV / Current NAV</h4>
-                  <div className="flex flex-col">
-                    <p className="text-white text-lg font-semibold">{formatCurrency(selectedFundData.avgNav.toFixed(2))}</p>
-                    <p className="text-blue-400 text-lg font-semibold">₹{selectedFundData.marketValue.toFixed(2)}</p>
+                {/* Fund Name & Badge */}
+                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
+                  <h4 className="text-gray-400 text-sm font-medium mb-1">Fund Details</h4>
+                  <div className="mb-2">
+                    <FundBadge fundName={selectedFundData.fund} />
                   </div>
+                  <p className="text-gray-300 text-sm truncate" title={selectedFundData.fund}>
+                    {selectedFundData.fund.length > 25 ? selectedFundData.fund.substring(0, 25) + '...' : selectedFundData.fund}
+                  </p>
                 </div>
 
-                {/* Investment & Value */}
-                <div className="bg-slate-900/60 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Invested / Current</h4>
+                {/* Holdings */}
+                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
+                  <h4 className="text-gray-400 text-sm font-medium mb-1">Holdings</h4>
+                  <p className="text-white text-xl font-bold">{(selectedFundData.totalUnits || 0).toFixed(4)} units</p>
+                  <p className="text-gray-300 text-sm">Avg: ₹{((selectedFundData.avgNav || 0)).toFixed(2)}</p>
+                </div>
+
+                {/* Investment Info */}
+                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
+                  <h4 className="text-gray-400 text-sm font-medium mb-1">Investment / Market</h4>
                   <div className="flex flex-col">
                     <p className="text-white text-lg font-semibold">{formatCurrency(selectedFundData.totalAmount)}</p>
                     <p className="text-blue-400 text-lg font-semibold">{formatCurrency(selectedFundData.currentValue)}</p>
@@ -889,19 +655,19 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
 
                 {/* P&L Combined */}
                 <div className={`p-4 rounded-xl border ${
-                  selectedFundData.profitLoss >= 0 
+                  (selectedFundData.profitLoss || 0) >= 0 
                     ? 'bg-green-900/30 border-green-600/50' 
                     : 'bg-red-900/30 border-red-600/50'
                 }`}>
                   <h4 className="text-gray-400 text-sm font-medium mb-1">Profit & Loss</h4>
                   <div className="flex flex-col">
                     <p className={`text-lg font-bold ${
-                      selectedFundData.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'
+                      (selectedFundData.profitLoss || 0) >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {formatCurrency(selectedFundData.profitLoss)}
                     </p>
                     <p className={`text-sm font-semibold ${
-                      selectedFundData.profitLoss >= 0 ? 'text-green-300' : 'text-red-300'
+                      (selectedFundData.profitLoss || 0) >= 0 ? 'text-green-300' : 'text-red-300'
                     }`}>
                       {formatPercent(
                         returnType === 'absolute' 
@@ -914,16 +680,16 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
               </div>
 
               {/* Transaction History Section */}
-              <div className="bg-slate-900/60 rounded-xl border border-gray-600">
+              <div className="bg-gray-700 rounded-xl border border-gray-600">
                 <div className="flex items-center justify-between p-4 border-b border-gray-600">
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                     Transaction History
                     <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                      {selectedFundData.rows.length}
+                      {selectedFundData.transactions ? selectedFundData.transactions.length : 0}
                     </span>
                   </h3>
                   
-                  {/* Toggle Transactions Button - Improved */}
+                  {/* Toggle Transactions Button */}
                   <button
                     onClick={() => setShowTransactions(!showTransactions)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
@@ -934,12 +700,12 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                   >
                     {showTransactions ? (
                       <>
-                        <List size={16} />
+                        <TrendingDown size={16} />
                         Hide Transactions
                       </>
                     ) : (
                       <>
-                        <List size={16} />
+                        <TrendingUp size={16} />
                         Show Transactions
                       </>
                     )}
@@ -947,7 +713,7 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                 </div>
 
                 {/* Transactions Table */}
-                {showTransactions && (
+                {showTransactions && selectedFundData.transactions && selectedFundData.transactions.length > 0 && (
                   <div className="p-4">
                     <div className="overflow-x-auto">
                       <table className="w-full">
@@ -962,25 +728,28 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                           </tr>
                         </thead>
                         <tbody>
-                          {selectedFundData.rows.map((transaction, index) => (
+                          {selectedFundData.transactions.map((transaction, index) => (
                             <tr key={index} className="border-b border-gray-700 hover:bg-gray-600/30">
                               <td className="py-3 px-4 text-gray-200">
                                 {transaction["Date"] || Object.values(transaction)[0] || 'N/A'}
                               </td>
-                              <td className="py-3 px-4 text-gray-200 text-sm">
+                              <td className="py-3 px-4 text-gray-200">
                                 {transaction["Folio Number"] || Object.values(transaction)[1] || 'N/A'}
                               </td>
                               <td className="py-3 px-4">
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                  (transaction["Order"] || Object.values(transaction)[3] || 'BUY').toUpperCase() === 'SELL'
-                                    ? 'bg-red-600/20 text-red-400 border border-red-600/30'
-                                    : 'bg-green-600/20 text-green-400 border border-green-600/30'
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  ((transaction["Order"] || Object.values(transaction)[3] || 'BUY').toUpperCase() === 'BUY' || 
+                                   (transaction["Order"] || Object.values(transaction)[3] || 'BUY').toUpperCase() === 'PURCHASE')
+                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                    : 'bg-red-500/20 text-red-400 border border-red-500/30'
                                 }`}>
                                   {transaction["Order"] || Object.values(transaction)[3] || 'BUY'}
                                 </span>
                               </td>
                               <td className="py-3 px-4 text-right text-white font-medium">
-                                {parseFloat(transaction["Units"] || Object.values(transaction)[4] || 0).toFixed(2)}
+                                <span className={`${parseFloat(transaction["Units"] || Object.values(transaction)[4] || 0) < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                  {parseFloat(transaction["Units"] || Object.values(transaction)[4] || 0).toFixed(4)}
+                                </span>
                               </td>
                               <td className="py-3 px-4 text-right text-white font-medium">
                                 ₹{parseFloat(transaction["NAV"] || Object.values(transaction)[5] || 0).toFixed(2)}
@@ -994,12 +763,18 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                         
                         {/* Summary Row */}
                         <tfoot>
-                          <tr className="bg-slate-900/60 border-t-2 border-gray-500">
-                            <td colSpan="3" className="py-3 px-4 text-white font-bold">Total for {selectedFund}</td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {selectedFundData.totalUnits.toFixed(2)}
+                          <tr className="bg-gray-600/30 border-t-2 border-gray-500">
+                            <td className="py-3 px-4 text-white font-bold">
+                              Total for {selectedFundData.fund.length > 20 ? selectedFundData.fund.substring(0, 20) + '...' : selectedFundData.fund}
                             </td>
                             <td className="py-3 px-4"></td>
+                            <td className="py-3 px-4"></td>
+                            <td className="py-3 px-4 text-right text-white font-bold">
+                              {(selectedFundData.totalUnits || 0).toFixed(4)}
+                            </td>
+                            <td className="py-3 px-4 text-right text-white font-bold">
+                              ₹{((selectedFundData.avgNav || 0)).toFixed(2)}
+                            </td>
                             <td className="py-3 px-4 text-right text-white font-bold">
                               {formatCurrency(selectedFundData.totalAmount)}
                             </td>
@@ -1009,13 +784,23 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
                     </div>
                   </div>
                 )}
+
+                {/* No Transactions Message */}
+                {showTransactions && (!selectedFundData.transactions || selectedFundData.transactions.length === 0) && (
+                  <div className="p-4 text-center py-8">
+                    <div className="bg-gray-600/50 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <List size={24} className="text-gray-400" />
+                    </div>
+                    <p className="text-gray-400">No transaction history available for this fund</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
-            /* Empty State - Improved */
+            /* Empty State */
             <div className="text-center py-12">
               <div className="bg-gray-700/50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <BarChart3 size={32} className="text-gray-400" />
+                <ChartNoAxesCombined size={32} className="text-gray-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-300 mb-2">No Fund Selected</h3>
               <p className="text-gray-400">
@@ -1024,10 +809,6 @@ const InrMutualFunds = ({ transactions, onTotalMarketValue }) => {
             </div>
           )}
         </div>
-
-
-
-        
       </div>
     </div>
   );
