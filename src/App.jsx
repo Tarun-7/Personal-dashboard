@@ -11,6 +11,10 @@ import InrSavingsDashboardPage from './pages/INR/InrSavingsDashboardPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
 import UsdCryptoPage from './pages/USD/UsdCryptoPage';
 
+import DataLoadingService from './services/DataLoadingService';
+import InvestmentCalculationService from './services/InvestmentCalculationService';
+import ExchangeRateService from './services/ExchangeRateService';
+
 import { 
   Home, 
   BarChart3, 
@@ -83,135 +87,75 @@ const Dashboard = () => {
     }
   ]);
 
-  // Fetch USD/INR rate from exchangerate-api.com
+  // Fetch exchange rates
   useEffect(() => {
-    fetch('https://api.exchangerate-api.com/v4/latest/INR')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.rates && data.rates.USD) {
-          setUsdInrRate(1 / data.rates.USD);
-        }
-        if (data && data.rates && data.rates.EUR) {
-          setEuroInrRate(1 / data.rates.EUR);
-          console.log("EUR to INR Rate:", 1 / data.rates.EUR);
-          console.log("Euro Investments (INR):", euroInvestments);
-        }
-      })
-      .catch(() => {});
+    const loadExchangeRates = async () => {
+      const rates = await ExchangeRateService.fetchExchangeRates();
+      if (rates.success) {
+        setUsdInrRate(rates.usdInr);
+        setEuroInrRate(rates.euroInr);
+      }
+    };
+
+    loadExchangeRates();
   }, []);
 
-// Update net worth whenever investments, rates, or currency changes
-useEffect(() => {
-  if (netWorthCurrency === 'INR') {
-    setNetWorth(
-      rupeeInvestments +
-      usdInvestments * usdInrRate +
-      euroInvestments * euroInrRate
-    );
-  } else if (netWorthCurrency === 'USD') {
-    setNetWorth(
-      rupeeInvestments / usdInrRate +
-      usdInvestments +
-      (euroInvestments * euroInrRate) / usdInrRate
-    );
-  } else if (netWorthCurrency === 'EUR') {
-    setNetWorth(
-      rupeeInvestments / euroInrRate +
-      usdInvestments * (usdInrRate / euroInrRate) +
-      euroInvestments
-    );
-  }
-}, [rupeeInvestments, usdInvestments, euroInvestments, usdInrRate, euroInrRate, netWorthCurrency]);
+  // Update net worth calculation
+  useEffect(() => {
+    if (usdInrRate && euroInrRate) {
+      const investments = {
+        rupee: rupeeInvestments,
+        usd: usdInvestments,
+        euro: euroInvestments
+      };
+      
+      const exchangeRates = {
+        usdInr: usdInrRate,
+        euroInr: euroInrRate
+      };
 
-useEffect(() => {
-  // Load initial kuvera.csv file from public/data folder
-  const loadInitialKuveraFile = async () => {
-    try {
-      const response = await fetch('/data/kuvera.csv');
-      if (response.ok) {
-        const text = await response.text();
-        
-        // Parse the CSV using your existing logic
-        const [headerLine, ...lines] = text.split('\n').filter(Boolean);
-        const headers = headerLine.split(',');
-        
-        const parsed = lines.map(l => {
-          const vals = l.split(',');
-          return headers.reduce((obj, h, idx) => ({
-            ...obj,
-            [h.trim()]: vals[idx]?.trim()
-          }), {});
-        });
-        
-        setKuveraTransactions(parsed);
-        
-        // Calculate total mutual fund market value
-        // const total = parsed
-        //   .filter(txn => txn['Type'] && txn['Type'].toLowerCase().includes('mutual'))
-        //   .reduce((sum, txn) => {
-        //     const val = parseFloat(txn['Market Value']?.replace(/[^0-9.-]/g, '') || 0);
-        //     return sum + (isNaN(val) ? 0 : val);
-        //   }, 0);
-        
-        // setRupeeInvestments(total);
+      const calculatedNetWorth = InvestmentCalculationService.calculateNetWorth(
+        investments,
+        exchangeRates,
+        netWorthCurrency
+      );
+      
+      setNetWorth(calculatedNetWorth);
+    }
+  }, [rupeeInvestments, usdInvestments, euroInvestments, usdInrRate, euroInrRate, netWorthCurrency]);
+
+  // Load initial data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      // Load Kuvera data
+      const kuveraData = await DataLoadingService.loadKuveraData();
+      if (kuveraData.success) {
+        setKuveraTransactions(kuveraData.transactions);
+        setRupeeInvestments(kuveraData.totalValue);
         console.log('Initial Kuvera file loaded successfully');
       }
-    } catch (error) {
-      console.log('Could not load initial kuvera.csv file:', error);
-      // This is not a critical error, so we just log it
-    }
-  };
 
-  loadInitialKuveraFile();
-}, []); // Empty dependency array means this runs once on mount
-
-
-useEffect(() => {
-  // Load initial ibkr.csv file from public/data folder
-  const loadInitialIbkrFile = async () => {
-    try {
-      const response = await fetch('/data/ibkr.csv');
-      if (response.ok) {
-        const text = await response.text();
-        
-        // Parse the CSV using your existing parseCSV function
-        const { headers, rows } = parseCSV(text);
-        
-        setIbkrTransactions(rows);
-        
-        // Calculate total trade value for USD investments
-        // const totalTradeValue = rows.reduce((sum, txn) => {
-        //   const val = parseFloat(txn['TradeMoney'] || 0);
-        //   return sum + Math.abs(val);
-        // }, 0);
-        
-        // setUsdInvestments(totalTradeValue);
+      // Load IBKR data
+      const ibkrData = await DataLoadingService.loadIbkrData();
+      if (ibkrData.success) {
+        setIbkrTransactions(ibkrData.transactions);
+        setUsdInvestments(ibkrData.totalValue);
         console.log('Initial IBKR file loaded successfully');
       }
-    } catch (error) {
-      console.log('Could not load initial ibkr.csv file:', error);
-      // This is not a critical error, so we just log it
-    }
-  };
+    };
 
-  loadInitialIbkrFile();
-}, []); // Empty dependency array means this runs once on mount
-
-
-
+    loadInitialData();
+  }, []);
 
 // Convert goalAmount (which is always in INR) to the selected currency
-const getGoalAmountInCurrency = () => {
-  if (netWorthCurrency === 'INR') {
-    return goalAmount;
-  } else if (netWorthCurrency === 'USD') {
-    return usdInrRate > 0 ? goalAmount / usdInrRate : 0;
-  } else if (netWorthCurrency === 'EUR') {
-    return euroInrRate > 0 ? goalAmount / euroInrRate : 0;
-  }
-  return goalAmount;
-};
-
+  const getGoalAmountInCurrency = () => {
+    const exchangeRates = { usdInr: usdInrRate, euroInr: euroInrRate };
+    return InvestmentCalculationService.convertGoalAmountToCurrency(
+      goalAmount,
+      netWorthCurrency,
+      exchangeRates
+    );
+  };
 
 // Handle file uploads for different brokers
   const handleFileUpload = (broker, event) => {
@@ -230,109 +174,41 @@ const getGoalAmountInCurrency = () => {
     }
   };
 
-  const handleKuveraFile = (e) => {
-
-    const selectedFile = e.target.files[0];
+  const handleKuveraFile = async (event) => {
+    const selectedFile = event.target.files[0];
     if (!selectedFile) return;
-    const fileDownloadUrl = URL.createObjectURL(selectedFile);
-    const currentTime = new Date().toLocaleString();
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target.result;
-      const [headerLine, ...lines] = text.split("\n").filter(Boolean);
-      const headers = headerLine.split(",");
-      const parsed = lines.map((l) => {
-        const vals = l.split(",");
-        return headers.reduce(
-          (obj, h, idx) => ({
-            ...obj,
-            [h.trim()]: vals[idx]?.trim(),
-          }),
-          {}
-        );
-      });
-      setKuveraTransactions(parsed);
-      
-      // Calculate total mutual fund market value and save to state
-      const total = parsed
-        .filter(txn => txn['Type'] && txn['Type'].toLowerCase().includes('mutual'))
-        .reduce((sum, txn) => {
-          const val = parseFloat(
-            txn['Market Value']?.replace(/[^0-9.-]+/g, '') || '0'
-          );
-          return sum + (isNaN(val) ? 0 : val);
-        }, 0);
-      setRupeeInvestments(total);
 
+    try {
+      const result = await DataLoadingService.processKuveraFile(selectedFile);
+      
+      setKuveraTransactions(result.transactions);
+      setRupeeInvestments(result.totalValue);
       setActiveTab("inr-mutual-funds");
       setBrokerType("Kuvera");
-    };
-    reader.readAsText(selectedFile);
-  }
-// Simple CSV parser handling quoted fields (does not support multiline fields)
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return { headers: [], rows: [] };
-
-  // Parse headers
-  const headers = csvSplitLine(lines[0]);
-  const rows = lines.slice(1).map(line => {
-    const values = csvSplitLine(line);
-    return headers.reduce((obj, h, i) => {
-      obj[h.trim()] = values[i]?.trim() || '';
-      return obj;
-    }, {});
-  });
-  return { headers, rows };
-}
-
-// Split CSV line into fields properly handling quoted commas
-function csvSplitLine(line) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"' && (i === 0 || line[i - 1] !== '\\')) {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      result.push(current);
-      current = '';
-    } else {
-      current += char;
+    } catch (error) {
+      console.error('Error processing Kuvera file:', error);
+      // Handle error appropriately
     }
-  }
-  result.push(current);
-  return result;
-}
-
-const handleIbkrFile = (e) => {
-  const selectedFile = e.target.files[0];
-  if (!selectedFile) return;
-  const reader = new FileReader();
-
-  reader.onload = (ev) => {
-    const text = ev.target.result;
-    const { rows } = parseCSV(text);
-
-    setIbkrTransactions(rows);
-
-    const totalTradeValue = rows.reduce((sum, txn) => {
-      const val = parseFloat(txn['TradeMoney']) || 0;
-      return sum + Math.abs(val);
-    }, 0);
-
-
-    setActiveTab('usd-stocks');
-    setBrokerType("Interactive Broker");
   };
 
-  reader.readAsText(selectedFile);
-};
+  const handleIbkrFile = async (event) => {
+    const selectedFile = event.target.files[0];
+    if (!selectedFile) return;
 
-// Liabilities
-  const [liability, setLiability] = useState([
+    try {
+      const result = await DataLoadingService.processIbkrFile(selectedFile);
+      
+      setIbkrTransactions(result.transactions);
+      setUsdInvestments(result.totalValue);
+      setActiveTab('usd-stocks');
+      setBrokerType("Interactive Broker");
+    } catch (error) {
+      console.error('Error processing IBKR file:', error);
+      // Handle error appropriately
+    }
+  };
+
+    const [liability, setLiability] = useState([
     {
       id: 1,
       date: "2024-01-15",
