@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   Plus,
   TrendingUp, 
@@ -25,6 +25,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Area, AreaChart } from 'recharts';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const InrSavingsDashboardPage = () => {
   const [showBalance, setShowBalance] = useState(true);
@@ -40,33 +41,55 @@ const InrSavingsDashboardPage = () => {
     description: ''
   });
 
-  // Mock data for cash and savings
-  const [cashSavingsData, setCashSavingsData] = useState([
-    {
-      id: 1,
-      type: 'Savings Account',
-      bankName: 'Axis Bank',
-      accountName: 'Primary Savings',
-      amount: 100000,
-      interestRate: 0,
-      maturityDate: null,
-      description: 'Emergency fund and daily expenses',
-      color: '#3B82F6',
-      addedDate: '2025-09-01'
-    },
-    {
-      id: 2,
-      type: 'Fixed Deposit',
-      bankName: 'Axis Bank',
-      accountName: 'FD - 1 Year',
-      amount: 25000,
-      interestRate: 6.6,
-      maturityDate: '2027-03-03',
-      description: 'Emergency fund',
-      color: '#10B981',
-      addedDate: '2024-09-03'
-    }
-  ]);
+// Initialize with empty array to prevent undefined errors
+const [cashSavingsData, setCashSavingsData] = useState([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+
+  // Fixed useEffect
+  useEffect(() => {
+    const loadMockData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Make sure the file path is correct - should match your public folder structure
+        const response = await fetch('/data/inr-savings.json');
+        
+        // Check if the response is successful
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+        }
+        
+        // Check if response is actually JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Response is not JSON');
+        }
+        
+        const data = await response.json();
+        
+        // Validate that data is an array
+        if (!Array.isArray(data)) {
+          throw new Error('Data is not an array');
+        }
+        
+        console.log('Loaded savings data:', data); // Debug log
+        setCashSavingsData(data);
+        
+      } catch (error) {
+        console.error('Failed to load savings data:', error);
+        setError(error.message);
+        
+        // Fallback to empty array
+        setCashSavingsData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMockData();
+  }, []);
 
   const accountTypes = [
     { value: 'Savings Account', label: 'Savings Account', icon: Building2 },
@@ -209,6 +232,32 @@ const InrSavingsDashboardPage = () => {
     const accountType = accountTypes.find(t => t.value === type);
     return accountType ? accountType.icon : Building2;
   };
+
+    // Loading state
+  if (loading) {
+    return (
+      <LoadingScreen />  
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <p className="text-lg text-red-400 mb-4">Failed to load savings data</p>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-6">
