@@ -25,9 +25,6 @@ const sidebarItems = [
  { 
    name: 'Analytics', 
    icon: BarChart3,
-   submenu: [
-     { name: 'Portfolio Analysis', path: 'analytics-portfolio', icon: PieChart }
-   ]
  },
  { name: 'Liabilities', icon: Siren },
  { name: 'Goals', icon: Goal },

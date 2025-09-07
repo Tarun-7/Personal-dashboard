@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './app.css'
-import TransactionsTab from './pages/Transactions';
 import DashboardPage from './pages/DashboardPage';
-import UploadTab from './pages/UploadPage';
+import UploadPage from './pages/UploadPage';
 import LiabilitiesPage from './pages/LiabilitiesPage';
 import GoalsPage from './pages/GoalsPage';
 import Sidebar from './components/Sidebar';
@@ -10,6 +9,7 @@ import InrMutualFunds from './pages/INR/InrMutualFunds';
 import InrInvestmentsOverview from './pages/INR/InrOverviewPage';
 import InrSavingsDashboardPage from './pages/INR/InrSavingsDashboardPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
+import UsdCryptoPage from './pages/USD/UsdCryptoPage';
 
 import { 
   Home, 
@@ -46,10 +46,15 @@ const Dashboard = () => {
   ];
 
 
-  //
+  // Reviewed 
+  const [rupeeInvestments, setRupeeInvestments] = useState(0);
+  const [InrMfValue, setInrMfvalue] = useState(0);
+  const [InrSavingsValue, setInrSavingsValue] = useState(0);
+
+
+  //Reviewed states for investments and transactions
   const [kuveraTransactions, setKuveraTransactions] = useState([]);
   const [ibkrTransactions, setIbkrTransactions] = useState([]);
-  const [rupeeInvestments, setRupeeInvestments] = useState(0);
   const [usdInvestments, setUsdInvestments] = useState(0);
   const [euroInvestments, setEuroInvestments] = useState(7000);
   const [netWorth, setNetWorth] = useState(0);
@@ -141,14 +146,14 @@ useEffect(() => {
         setKuveraTransactions(parsed);
         
         // Calculate total mutual fund market value
-        const total = parsed
-          .filter(txn => txn['Type'] && txn['Type'].toLowerCase().includes('mutual'))
-          .reduce((sum, txn) => {
-            const val = parseFloat(txn['Market Value']?.replace(/[^0-9.-]/g, '') || 0);
-            return sum + (isNaN(val) ? 0 : val);
-          }, 0);
+        // const total = parsed
+        //   .filter(txn => txn['Type'] && txn['Type'].toLowerCase().includes('mutual'))
+        //   .reduce((sum, txn) => {
+        //     const val = parseFloat(txn['Market Value']?.replace(/[^0-9.-]/g, '') || 0);
+        //     return sum + (isNaN(val) ? 0 : val);
+        //   }, 0);
         
-        setRupeeInvestments(total);
+        // setRupeeInvestments(total);
         console.log('Initial Kuvera file loaded successfully');
       }
     } catch (error) {
@@ -175,12 +180,12 @@ useEffect(() => {
         setIbkrTransactions(rows);
         
         // Calculate total trade value for USD investments
-        const totalTradeValue = rows.reduce((sum, txn) => {
-          const val = parseFloat(txn['TradeMoney'] || 0);
-          return sum + Math.abs(val);
-        }, 0);
+        // const totalTradeValue = rows.reduce((sum, txn) => {
+        //   const val = parseFloat(txn['TradeMoney'] || 0);
+        //   return sum + Math.abs(val);
+        // }, 0);
         
-        setUsdInvestments(totalTradeValue);
+        // setUsdInvestments(totalTradeValue);
         console.log('Initial IBKR file loaded successfully');
       }
     } catch (error) {
@@ -259,8 +264,8 @@ const getGoalAmountInCurrency = () => {
         }, 0);
       setRupeeInvestments(total);
 
-      setActiveTab("Transactions");
-      setbrokerType("Kuvera");
+      setActiveTab("inr-mutual-funds");
+      setBrokerType("Kuvera");
     };
     reader.readAsText(selectedFile);
   }
@@ -319,31 +324,34 @@ const handleIbkrFile = (e) => {
     }, 0);
 
 
-    setActiveTab('Transactions');
-    setbrokerType("Interactive Broker");
+    setActiveTab('usd-stocks');
+    setBrokerType("Interactive Broker");
   };
 
   reader.readAsText(selectedFile);
 };
 
 // Liabilities
-const [liabilities, setLiabilities] = useState([]);
+  const [liability, setLiability] = useState([
+    {
+      id: 1,
+      date: "2024-01-15",
+      value: 185000,
+      currency: "USD",
+      note: "Monthly statement balance"
+    },
+    {
+      id: 2,
+      date: "2024-02-15", 
+      value: 182000,
+      currency: "USD",
+      note: "After payment"
+    }
+  ]);
 
-// Calculate total liabilities in dashboard currency
-const totalLiabilities = liabilities.reduce((sum, l) => {
-  if (netWorthCurrency === l.currency) return sum + l.amount;
-  if (l.currency === 'USD' && netWorthCurrency === 'INR' && usdInrRate)
-    return sum + l.amount * usdInrRate;
-  if (l.currency === 'INR' && netWorthCurrency === 'USD' && usdInrRate)
-    return sum + l.amount / usdInrRate;
-  // For more currencies, extend as needed.
-  return sum;
-}, 0);
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
-
-      
+    <div className="flex h-screen bg-slate-950 text-white">
       
       {/* Sidebar */}
       {sidebarOpen && (
@@ -368,10 +376,6 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
                 <Menu size={20} className="text-white" />
               </button>
             )}
-            <h1 className="text-2xl font-semibold">{activeTab}</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
           </div>
         </div>
 
@@ -419,33 +423,25 @@ const totalLiabilities = liabilities.reduce((sum, l) => {
             />
           )}  
 
-          {/* Transactions Page */}
-          {activeTab === 'Transactions' && (
-            <TransactionsTab
-              brokerType={brokerType}
-              setBrokerType={setBrokerType}
-              kuveraTransactions={kuveraTransactions}
-              setRupeeInvestments={setRupeeInvestments}
-              ibkrTransactions={ibkrTransactions}
-              setUsdInvestments={setUsdInvestments}
+          {activeTab === 'usd-crypto' && (
+            <UsdCryptoPage
             />
-          )}
+          )}  
 
           {/* Upload Page */}
           {activeTab === 'Upload' && (
-            <UploadTab
+            <UploadPage
               uploadedFiles={uploadedFiles}
               handleFileUpload={handleFileUpload}
             />
           )}
 
 
-
           {/* Liabilities Page */}
           {activeTab === 'Liabilities' && (
             <LiabilitiesPage
-              balances={balances}
-              setBalances={setBalances}
+              balances={liability}
+              setBalances={setLiability}
             />
           )}
 
