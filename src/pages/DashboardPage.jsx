@@ -16,13 +16,24 @@ const Dashboard = ({
   usdInrRate,
   euroInrRate,
   getGoalAmountInCurrency,
-  overviewData,
   activityData,
-  payments,
-  transactions,
+  setActiveTab
 }) => {
   return (
     <>
+
+    {/* Header */}
+    <div className="flex justify-between items-start pb-4">
+      <div>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
+          Portfolio Overview
+        </h1>
+        <p className="text-gray-400">
+          Your comprehensive financial dashboard
+        </p>
+      </div>
+    </div>
+
       {/* Net Worth Card */}
       {usdInrRate !== null && euroInrRate !== null ? (
       <NetWorthCard
@@ -42,14 +53,6 @@ const Dashboard = ({
 
       {/* Investment Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* <InvestmentCard
-          title="INR Investments"
-          amount={rupeeInvestments}
-          currencySymbol="₹"
-          Icon={IndianRupee}
-          iconClassName="w-8 h-8 text-blue-500"
-          amountLocale="en-IN"
-        /> */}
 
         <InvestmentCard
           title="INR Investments"
@@ -57,11 +60,10 @@ const Dashboard = ({
           currencySymbol="₹"
           delta="+8.2% this month"
           deltaPositive={true}
-          lastUpdated="2 hours ago"
-          fxNote="1 USD = ₹83.25"
           icons={<IndianRupee className="h-6 w-6 text-white" />}
           badgeGradient={["#3b82f6", "#2563eb"]}
           amountLocale="en-IN"
+          onClick={() => setActiveTab('inr-overview')} // Sidebar path
         />
 
         <InvestmentCard
@@ -103,9 +105,8 @@ const Dashboard = ({
         />
       </div>
 
-      {/* Overview Chart, Credit Card, Activity Chart, Payment Section */}
+      {/* Activity Chart */}
       <div className="grid">
-        {/* Activity Chart */}
         <div className="bg-gray-800 p-6 rounded-lg">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
             <h3 className="text-lg font-semibold">Activity</h3>

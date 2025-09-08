@@ -2,13 +2,14 @@ import React, { useState, useMemo, useCallback } from 'react';
 import {
   Plus, TrendingUp, TrendingDown, PieChart, BarChart3, Activity, Target, Calendar,
   DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield,
-  Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard
+  Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard,
+  Download
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Area, AreaChart } from 'recharts';
 import LoadingScreen from '../../components/LoadingScreen';
 import SavingsCalculationService from '../../services/SavingsCalculationService';
 
-const InrSavingsDashboardPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
+const InrSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
   const [showBalance, setShowBalance] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -148,6 +149,47 @@ const InrSavingsDashboardPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
     setShowAddModal(false);
   };
 
+  // Export function to download cashSavingsData as JSON
+  const handleExportData = () => {
+    try {
+      // Create JSON data with proper formatting
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        totalAmount: analytics.totalAmount,
+        itemCount: analytics.itemCount,
+        data: cashSavingsData
+      };
+      
+      // Convert to JSON string with proper indentation
+      const jsonString = JSON.stringify(exportData, null, 2);
+      
+      // Create blob and download link
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create temporary download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `cash_savings_export_${new Date().toISOString().split('T')[0]}.json`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      // Optional: Show success message (you can add a toast notification here)
+      console.log('Savings data exported successfully');
+      
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Failed to export data. Please try again.');
+    }
+  };
+
+
   const getTypeIcon = (type) => {
     const accountType = accountTypes.find(t => t.value === type);
     return accountType ? accountType.icon : Building2;
@@ -189,10 +231,24 @@ const InrSavingsDashboardPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
             <div className="flex items-center gap-4">
               <button
                 onClick={handleAddNew}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                <Plus className="w-5 h-5" />
-                Add New
+                <Plus size={20} />
+                New
+              </button>
+              
+              <button
+                onClick={handleExportData}
+                disabled={cashSavingsData.length === 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  cashSavingsData.length === 0 
+                    ? 'bg-slate-600 text-slate-500 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl'
+                }`}
+                title="Export savings data to JSON"
+              >
+                <Download size={20} />
+                Export
               </button>
               
               <button
@@ -591,4 +647,4 @@ const InrSavingsDashboardPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
   );
 };
 
-export default InrSavingsDashboardPage;
+export default InrSavingsPage;
