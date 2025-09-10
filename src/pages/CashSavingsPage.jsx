@@ -6,10 +6,11 @@ import {
   Download
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Area, AreaChart } from 'recharts';
-import LoadingScreen from '../../components/LoadingScreen';
-import SavingsCalculationService from '../../services/SavingsCalculationService';
+import LoadingScreen from '../components/LoadingScreen';
+import SavingsCalculationService from '../services/SavingsCalculationService';
+import SummaryCard from '../components/SummaryCard';
 
-const InrSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
+const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
   const [showBalance, setShowBalance] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -263,53 +264,50 @@ const InrSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-blue-100 text-sm font-medium">Total Cash & Savings</h3>
-              <Wallet className="w-5 h-5 text-blue-200" />
-            </div>
-            <p className="text-3xl font-bold text-white mb-1">{formatCurrency(analytics.totalAmount)}</p>
-            <div className="flex items-center gap-1">
-              <TrendingUp className="w-4 h-4 text-green-300" />
-              <span className="text-green-300 text-sm">+2.1% this month</span>
-            </div>
-          </div>
 
-          <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-green-100 text-sm font-medium">Avg Interest Rate</h3>
-              <Target className="w-5 h-5 text-green-200" />
-            </div>
-            <p className="text-3xl font-bold text-white mb-1">{analytics.avgInterestRate.toFixed(1)}%</p>
-            <div className="flex items-center gap-1">
-              <Activity className="w-4 h-4 text-green-300" />
-              <span className="text-green-300 text-sm">Across all accounts</span>
-            </div>
-          </div>
+          <SummaryCard
+            title="Total Cash & Savings"
+            value={formatCurrency(analytics.totalAmount)}
+            subtitle="+2.1% this month"
+            icon={Wallet}
+            statusIcon={TrendingUp}
+            gradient="from-blue-600 to-blue-700"
+            textColor="green"
+            pulseIcon={true}
+          />
 
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-emerald-100 text-sm font-medium">Annual Interest</h3>
-              <DollarSign className="w-5 h-5 text-emerald-200" />
-            </div>
-            <p className="text-3xl font-bold text-white mb-1">{formatCurrency(analytics.totalInterestEarning)}</p>
-            <div className="flex items-center gap-1">
-              <ArrowUpRight className="w-4 h-4 text-emerald-300" />
-              <span className="text-emerald-300 text-sm">Expected yearly</span>
-            </div>
-          </div>
+          <SummaryCard
+            title="Avg Interest Rate"
+            value={`${analytics.avgInterestRate.toFixed(1)}%`}
+            subtitle="Across all accounts"
+            icon={Wallet}
+            statusIcon={TrendingUp}
+            gradient="from-green-600 to-green-700"
+            textColor="green"
+            pulseIcon={true}
+          />
 
-          <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-purple-100 text-sm font-medium">Total Accounts</h3>
-              <Building2 className="w-5 h-5 text-purple-200" />
-            </div>
-            <p className="text-3xl font-bold text-white mb-1">{analytics.itemCount}</p>
-            <div className="flex items-center gap-1">
-              <Shield className="w-4 h-4 text-purple-300" />
-              <span className="text-purple-300 text-sm">Active accounts</span>
-            </div>
-          </div>
+          <SummaryCard
+            title="Annual Interest"
+            value={formatCurrency(analytics.totalInterestEarning)}
+            subtitle="Expected yearly"
+            icon={DollarSign}
+            statusIcon={ArrowUpRight}
+            gradient="from-emerald-600 to-emerald-700"
+            textColor="emerald"
+            pulseIcon={true}
+          />
+
+          <SummaryCard
+            title="Total Accounts"
+            value={analytics.itemCount}
+            subtitle="Active accounts"
+            icon={Building2}
+            statusIcon={Shield}
+            gradient="from-purple-600 to-purple-700"
+            textColor="purple"
+            pulseIcon={true}
+          />
         </div>
 
         {/* Accounts List */}
@@ -647,4 +645,4 @@ const InrSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
   );
 };
 
-export default InrSavingsPage;
+export default CashSavingsPage;

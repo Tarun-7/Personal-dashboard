@@ -7,7 +7,7 @@ import GoalsPage from './pages/GoalsPage';
 import Sidebar from './components/Sidebar';
 import InrMutualFunds from './pages/INR/InrMutualFunds';
 import InrInvestmentsOverview from './pages/INR/InrOverviewPage';
-import InrSavingsDashboardPage from './pages/INR/InrSavingsPage';
+import CashSavingsPage from './pages/CashSavingsPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
 import UsdCryptoPage from './pages/USD/UsdCryptoPage';
 
@@ -352,8 +352,8 @@ const Dashboard = () => {
             />
           )}
 
-          {activeTab === 'inr-savings' && (
-            <InrSavingsDashboardPage 
+          {activeTab === 'Cash & Savings' && (
+            <CashSavingsPage 
               savingsSummary={savingsSummary}
               onSavingsUpdate={handleSavingsUpdate}
             />

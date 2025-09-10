@@ -8,8 +8,7 @@ const sidebarItems = [
     icon: IndianRupee,
     submenu: [
      { name: 'Overview', path: 'inr-overview', icon: List },
-     { name: 'Mutual Funds', path: 'inr-mutual-funds', icon: PieChart },
-     { name: 'Savings', path: 'inr-savings', icon: PiggyBank }
+     { name: 'Mutual Funds', path: 'inr-mutual-funds', icon: PieChart }
   ]
  },
   { 
@@ -21,6 +20,7 @@ const sidebarItems = [
      { name: 'Crypto', path: 'usd-crypto', icon: Bitcoin }
   ]
  },
+ {name:'Cash & Savings', icon: PiggyBank},
  { name: 'Upload', icon: CreditCard },
  { 
    name: 'Analytics', 
