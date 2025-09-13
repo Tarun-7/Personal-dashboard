@@ -279,7 +279,7 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
         </div>
 
         {/* Summary Cards - Improved responsive layout */}
-        <div className="flex flex-row gap-6 mb-6 flex-nowrap overflow-x-auto">
+        <div className="flex flex-col lg:flex-row gap-6 mb-8 lg:flex-nowrap">
           {/* Total Invested Card */}
           <PortfolioCard         
             title="Net Investment"

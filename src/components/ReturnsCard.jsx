@@ -61,12 +61,12 @@ const ReturnsCard = ({
                 />
                 
                 {/* Toggle Options */}
-                <div className={`flex-1 text-center py-2.5 px-3 rounded-lg transition-colors duration-200 relative z-10 ${
+                <div className={`flex-1 text-center py-1 px-3 rounded-lg transition-colors duration-200 relative z-10 ${
                   returnType === 'absolute' ? 'text-white font-semibold' : 'text-white/70'
                 }`}>
                   <span className="text-sm">Absolute</span>
                 </div>
-                <div className={`flex-1 text-center py-2.5 px-3 rounded-lg transition-colors duration-200 relative z-10 ${
+                <div className={`flex-1 text-center py-1 px-3 rounded-lg transition-colors duration-200 relative z-10 ${
                   returnType === 'xirr' ? 'text-white font-semibold' : 'text-white/70'
                 }`}>
                   <span className="text-sm">XIRR</span>
