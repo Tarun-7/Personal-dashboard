@@ -338,14 +338,14 @@ const Dashboard = () => {
             />
           )}
 
-          {activeTab === 'inr-overview' && (
+          {/* {activeTab === 'INR Investments' && (
             <InrInvestmentsOverview 
               transactions={kuveraTransactions} 
               onTotalMarketValue={setRupeeInvestments} 
             />
-          )}
+          )} */}
 
-          {activeTab === 'inr-mutual-funds' && (
+          {activeTab === 'INR Investments' && (
             <InrMutualFunds 
               transactions={kuveraTransactions} 
               mutualFundSummary={mutualFundSummary}

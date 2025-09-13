@@ -6,10 +6,6 @@ const sidebarItems = [
  { 
     name: 'INR Investments', 
     icon: IndianRupee,
-    submenu: [
-     { name: 'Overview', path: 'inr-overview', icon: List },
-     { name: 'Mutual Funds', path: 'inr-mutual-funds', icon: PieChart }
-  ]
  },
   { 
     name: 'USD Investments', 
