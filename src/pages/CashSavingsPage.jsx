@@ -1,16 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import {
-  Plus, TrendingUp, TrendingDown, PieChart, BarChart3, Activity, Target, Calendar,
-  DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield,
-  Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard,
-  Download
-} from 'lucide-react';
+import { Plus, IndianRupee, Euro, TrendingUp, TrendingDown, PieChart, BarChart3, Activity, Target, Calendar, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield, Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard, Download } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Area, AreaChart } from 'recharts';
 import LoadingScreen from '../components/LoadingScreen';
 import SavingsCalculationService from '../services/SavingsCalculationService';
 import SummaryCard from '../components/SummaryCard';
 
-const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
+const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83, euroInrRate = 91 }) => {
+  // Add selected currency state
+  const [selectedCurrency, setSelectedCurrency] = useState('INR');
   const [showBalance, setShowBalance] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -21,8 +18,10 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
     amount: '',
     interestRate: '',
     maturityDate: '',
-    description: ''
+    description: '',
+    currency: 'INR' // Add currency field
   });
+
   const cashSavingsData = savingsSummary.savingsData || [];
   const loading = false;
   const error = savingsSummary.error;
@@ -38,14 +37,45 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
     { value: 'Cash', label: 'Cash in Hand', icon: Wallet }
   ];
 
-  // Use pre-calculated analytics from props
-  const analytics = useMemo(() => ({
-    totalAmount: savingsSummary.totalAmount || 0,
-    avgInterestRate: savingsSummary.avgInterestRate || 0,
-    totalInterestEarning: savingsSummary.totalInterestEarning || 0,
-    allocation: savingsSummary.allocation || [],
-    itemCount: savingsSummary.itemCount || 0
-  }), [savingsSummary]);
+  // Currency conversion helper
+  const convertAmount = useCallback((amount, fromCurrency = 'INR') => {
+    // Convert any currency to INR first
+    let amountInINR = amount;
+    if (fromCurrency === 'USD') {
+      amountInINR = amount * (usdInrRate || 83);
+    } else if (fromCurrency === 'EUR') {
+      amountInINR = amount * (euroInrRate || 91);
+    }
+
+    // Then convert INR to selected currency
+    if (selectedCurrency === 'USD') {
+      return amountInINR / (usdInrRate || 83);
+    } else if (selectedCurrency === 'EUR') {
+      return amountInINR / (euroInrRate || 91);
+    }
+
+    return amountInINR; // Return INR
+  }, [selectedCurrency, usdInrRate, euroInrRate]);
+
+  // Use pre-calculated analytics from props with currency conversion
+  const analytics = useMemo(() => {
+    const totalAmount = (savingsSummary.savingsData || []).reduce((sum, item) => {
+      return sum + convertAmount(item.amount, item.currency || 'INR');
+    }, 0);
+
+    const totalInterestEarning = (savingsSummary.savingsData || []).reduce((sum, item) => {
+      const convertedAmount = convertAmount(item.amount, item.currency || 'INR');
+      return sum + (convertedAmount * (item.interestRate || 0) / 100);
+    }, 0);
+
+    return {
+      totalAmount,
+      avgInterestRate: savingsSummary.avgInterestRate || 0,
+      totalInterestEarning,
+      allocation: savingsSummary.allocation || [],
+      itemCount: savingsSummary.itemCount || 0
+    };
+  }, [savingsSummary, selectedCurrency, convertAmount]);
 
   // Monthly growth data (mock) - keep same
   const monthlyData = [
@@ -58,16 +88,19 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
     { month: 'Dec', amount: 1155000 }
   ];
 
-  // Keep same formatting functions
-  const formatCurrency = (amount) => {
-    if (!showBalance) return '₹••••••';
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+  // Enhanced formatting functions with currency support
+  const formatCurrency = useCallback((amount, fromCurrency = 'INR') => {
+    if (!showBalance) return '••••••';
+
+    const convertedAmount = convertAmount(amount, fromCurrency);
+    const currencySymbols = { INR: '₹', USD: '$', EUR: '€' };
+    const symbol = currencySymbols[selectedCurrency] || '₹';
+
+    return symbol + convertedAmount.toLocaleString('en-US', {
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+      maximumFractionDigits: 2
+    });
+  }, [showBalance, selectedCurrency, convertAmount]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -87,7 +120,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
     return diffDays;
   };
 
-  // Keep same UI handlers
+  // Keep same UI handlers with currency support
   const handleAddNew = () => {
     setFormData({
       type: '',
@@ -96,7 +129,8 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
       amount: '',
       interestRate: '',
       maturityDate: '',
-      description: ''
+      description: '',
+      currency: 'INR' // Default to INR
     });
     setEditingItem(null);
     setShowAddModal(true);
@@ -110,7 +144,8 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
       amount: item.amount.toString(),
       interestRate: item.interestRate.toString(),
       maturityDate: item.maturityDate || '',
-      description: item.description
+      description: item.description,
+      currency: item.currency || 'INR' // Include currency
     });
     setEditingItem(item);
     setShowAddModal(true);
@@ -134,6 +169,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
       accountName: formData.accountName,
       amount: parseFloat(formData.amount),
       interestRate: parseFloat(formData.interestRate) || 0,
+      currency: formData.currency || 'INR', // Include currency
       maturityDate: formData.maturityDate || null,
       description: formData.description,
       color: accountTypes.find(t => t.value === formData.type)?.color || '#6B7280',
@@ -141,11 +177,11 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
     };
 
     const updatedSummary = SavingsCalculationService.updateSavingsData(
-      cashSavingsData, 
-      newItem, 
+      cashSavingsData,
+      newItem,
       !!editingItem
     );
-    
+
     onSavingsUpdate(updatedSummary);
     setShowAddModal(false);
   };
@@ -156,40 +192,40 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
       // Create JSON data with proper formatting
       const exportData = {
         exportDate: new Date().toISOString(),
+        selectedCurrency: selectedCurrency,
         totalAmount: analytics.totalAmount,
         itemCount: analytics.itemCount,
         data: cashSavingsData
       };
-      
+
       // Convert to JSON string with proper indentation
       const jsonString = JSON.stringify(exportData, null, 2);
-      
+
       // Create blob and download link
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      
+
       // Create temporary download link
       const link = document.createElement('a');
       link.href = url;
-      link.download = `cash_savings_export_${new Date().toISOString().split('T')[0]}.json`;
-      
+      link.download = `cash_savings_export_${selectedCurrency}_${new Date().toISOString().split('T')[0]}.json`;
+
       // Trigger download
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       // Optional: Show success message (you can add a toast notification here)
       console.log('Savings data exported successfully');
-      
+
     } catch (error) {
       console.error('Error exporting data:', error);
       alert('Failed to export data. Please try again.');
     }
   };
-
 
   const getTypeIcon = (type) => {
     const accountType = accountTypes.find(t => t.value === type);
@@ -211,9 +247,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
 
   // Loading state - keep same
   if (loading) {
-    return (
-      <LoadingScreen />
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -224,12 +258,27 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-                Cash & Savings
+                Cash Savings
               </h1>
               <p className="text-gray-400">Manage your cash, savings accounts, and fixed deposits</p>
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Currency Switcher */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="currency" className="text-sm text-gray-400">Currency:</label>
+                <select
+                  id="currency"
+                  value={selectedCurrency}
+                  onChange={e => setSelectedCurrency(e.target.value)}
+                  className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                >
+                  <option value="INR">INR (₹)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                </select>
+              </div>
+
               <button
                 onClick={handleAddNew}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -237,7 +286,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                 <Plus size={20} />
                 New
               </button>
-              
+
               <button
                 onClick={handleExportData}
                 disabled={cashSavingsData.length === 0}
@@ -251,7 +300,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                 <Download size={20} />
                 Export
               </button>
-              
+
               <button
                 onClick={() => setShowBalance(!showBalance)}
                 className="p-3 bg-gray-800 rounded-xl hover:bg-gray-700 transition-colors"
@@ -264,9 +313,8 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-
           <SummaryCard
-            title="Total Cash & Savings"
+            title="Total Cash Savings"
             value={formatCurrency(analytics.totalAmount)}
             subtitle="+2.1% this month"
             icon={Wallet}
@@ -312,19 +360,75 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
 
         {/* Accounts List */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden shadow-2xl mb-8">
-          <div className="p-6 border-b border-gray-700">
-            <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Building2 className="w-6 h-6" />
-              Your Accounts
-            </h3>
-          </div>
+        <div className="p-6 border-b border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Building2 className="w-6 h-6" />
+            Your Accounts ({selectedCurrency})
+          </h3>
           
+          <div className="flex flex-col items-center">
+            <button
+              onClick={() => setSelectedCurrency(prev =>
+                prev === 'INR' ? 'USD' : prev === 'USD' ? 'EUR' : 'INR'
+              )}
+              className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 transform hover:scale-110 cursor-pointer group ${
+                selectedCurrency === 'INR'
+                  ? 'bg-gradient-to-br from-orange-400 to-orange-500 shadow-orange-500/25'
+                  : selectedCurrency === 'USD'
+                    ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/25'
+                    : 'bg-gradient-to-br from-blue-400 to-blue-500 shadow-blue-500/25'
+              } shadow-lg hover:shadow-xl`}
+              title={`Switch to ${selectedCurrency === 'INR' ? 'USD' : selectedCurrency === 'USD' ? 'EUR' : 'INR'}`}
+            >
+              {/* Subtle pulsing ring animation */}
+              <div className={`absolute -inset-1 rounded-full animate-pulse opacity-10 ${
+                selectedCurrency === 'INR'
+                  ? 'bg-orange-400'
+                  : selectedCurrency === 'USD'
+                    ? 'bg-emerald-400'
+                    : 'bg-blue-400'
+              }`}></div>
+              
+              {/* Static ring for depth */}
+              <div className={`absolute inset-0 rounded-full ring-2 ${
+                selectedCurrency === 'INR'
+                  ? 'ring-orange-300/30'
+                  : selectedCurrency === 'USD'
+                    ? 'ring-emerald-300/30'
+                    : 'ring-blue-300/30'
+              }`}></div>
+              
+              {/* Currency icon */}
+              <div className="relative z-10">
+                {selectedCurrency === 'INR' && <IndianRupee className="w-4 h-4 text-white drop-shadow-sm" />}
+                {selectedCurrency === 'USD' && <DollarSign className="w-4 h-4 text-white drop-shadow-sm" />}
+                {selectedCurrency === 'EUR' && <Euro className="w-4 h-4 text-white drop-shadow-sm" />}
+              </div>
+              
+              {/* Hover overlay */}
+              <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+            
+            {/* Tap to switch label */}
+            <span className={`text-xs font-medium mt-2 animate-pulse transition-colors duration-500 text-center ${
+              selectedCurrency === 'INR'
+                ? 'text-orange-300'
+                : selectedCurrency === 'USD'
+                  ? 'text-emerald-300'
+                  : 'text-blue-300'
+            }`}>
+              Tap to switch
+            </span>
+          </div>
+        </div>
+
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-800">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Account Details</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-300">Amount</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-300">Amount ({selectedCurrency})</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Interest Rate</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Maturity</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Actions</th>
@@ -344,25 +448,49 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center`} style={{ backgroundColor: `${item.color}20`, border: `1px solid ${item.color}30` }}>
-                            <IconComponent className="w-6 h-6" style={{ color: item.color }} />
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center"
+                            style={{
+                              backgroundColor: `${item.color}20`,
+                              border: `1px solid ${item.color}30`
+                            }}
+                          >
+                            <IconComponent
+                              className="w-6 h-6"
+                              style={{ color: item.color }}
+                            />
                           </div>
                           <div>
                             <p className="text-white font-medium">{item.accountName}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-sm text-gray-400">{item.bankName}</span>
-                              <span className={`px-2 py-1 rounded text-xs font-medium`} style={{ backgroundColor: `${item.color}20`, color: item.color }}>
+                              <span
+                                className="px-2 py-1 rounded text-xs font-medium"
+                                style={{
+                                  backgroundColor: `${item.color}20`,
+                                  color: item.color
+                                }}
+                              >
                                 {item.type}
                               </span>
                             </div>
                             {item.description && (
-                              <p className="text-xs text-gray-500 mt-1 max-w-xs truncate">{item.description}</p>
+                              <p className="text-xs text-gray-500 mt-1 max-w-xs truncate">
+                                {item.description}
+                              </p>
                             )}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <p className="text-white font-semibold text-lg">{formatCurrency(item.amount)}</p>
+                        <div className="text-white font-semibold">
+                          {formatCurrency(item.amount, item.currency || 'INR')}
+                          {item.currency && item.currency !== selectedCurrency && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Original: {item.currency} {item.amount.toLocaleString()}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-1">
@@ -375,7 +503,10 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                           <div>
                             <p className="text-white text-sm">{formatDate(item.maturityDate)}</p>
                             {daysToMaturity !== null && (
-                              <p className={`text-xs ${daysToMaturity > 30 ? 'text-gray-400' : daysToMaturity > 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+                              <p className={`text-xs ${
+                                daysToMaturity > 30 ? 'text-gray-400' : 
+                                daysToMaturity > 0 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>
                                 {daysToMaturity > 0 ? `${daysToMaturity} days left` : 'Matured'}
                               </p>
                             )}
@@ -463,7 +594,10 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
             <div className="grid grid-cols-2 gap-4 mt-4">
               {analytics.allocation.map((item, index) => (
                 <div key={item.name} className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: item.color }}></div>
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
                   <div className="flex-1">
                     <p className="text-white text-sm font-medium">{item.name}</p>
                     <p className="text-gray-400 text-xs">{item.percentage.toFixed(1)}%</p>
@@ -483,13 +617,16 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
               <AreaChart data={monthlyData}>
                 <defs>
                   <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="month" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" tickFormatter={(value) => `â‚¹${(value / 100000).toFixed(0)}L`} />
+                <YAxis
+                  stroke="#9CA3AF"
+                  tickFormatter={(value) => `₹${(value / 100000).toFixed(0)}L`}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#1f2937',
@@ -531,7 +668,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Account Type *</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Account Type</label>
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
@@ -539,14 +676,14 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors"
                     >
                       <option value="">Select account type</option>
-                      {accountTypes.map(type => (
+                      {accountTypes.map((type) => (
                         <option key={type.value} value={type.value}>{type.label}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Bank/Institution *</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Bank/Institution</label>
                     <input
                       type="text"
                       value={formData.bankName}
@@ -556,21 +693,37 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
                     />
                   </div>
+                </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Account Name</label>
+                  <input
+                    type="text"
+                    value={formData.accountName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
+                    placeholder="e.g., Primary Savings, FD - 1 Year"
+                    required
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Account Name *</label>
-                    <input
-                      type="text"
-                      value={formData.accountName}
-                      onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
-                      placeholder="e.g., Primary Savings, FD - 1 Year"
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Currency</label>
+                    <select
+                      value={formData.currency || 'INR'}
+                      onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors"
                       required
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
-                    />
+                    >
+                      <option value="INR">INR (₹)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                    </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Amount *</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Amount</label>
                     <input
                       type="number"
                       value={formData.amount}
@@ -582,7 +735,9 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Interest Rate (%)</label>
                     <input
@@ -614,7 +769,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Optional description for this account"
-                    rows="3"
+                    rows={3}
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors resize-none"
                   />
                 </div>
@@ -627,7 +782,6 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate }) => {
                     <Check className="w-5 h-5" />
                     {editingItem ? 'Update Account' : 'Add Account'}
                   </button>
-                  
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}

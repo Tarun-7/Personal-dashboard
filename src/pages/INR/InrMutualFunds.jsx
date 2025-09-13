@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
-import { Search, TrendingUp, TrendingDown, AlertCircle, Loader2, Download, Filter, SortAsc, SortDesc, BarChart3, List, ChartNoAxesCombined, HandCoins, Building2, PiggyBank, LineChart } from 'lucide-react';
+import { ChartNoAxesCombined, SortDesc, SortAsc, Search, TrendingUp, TrendingDown, Download, Filter, BarChart3, List, BarChart, HandCoins, PiggyBank, LineChart, ToggleLeft, ToggleRight, Percent } from 'lucide-react';
 import LoadingScreen from '../../components/LoadingScreen';
 
 // Fund Badge Component
@@ -271,80 +271,151 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-            INR Mutual Funds Portfolio Dashboard
+            Mutual Funds Portfolio
           </h1>
           <p className="text-gray-400">Track your mutual fund investments and performance</p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Summary Cards - Improved responsive layout */}
+        <div className="flex flex-row gap-6 mb-6 flex-wrap">
           {/* Total Invested Card */}
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-6 rounded-2xl shadow-xl transform hover:shadow-2xl transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <PiggyBank size={20} className="text-blue-200" />
-                  <h3 className="text-blue-100 text-sm font-medium uppercase tracking-wide">Net Investment</h3>
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 md:p-4 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-300 min-h-[120px] md:min-h-[130px] flex-grow min-w-[250px]">
+            <div className="flex items-start justify-between h-full">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <PiggyBank size={16} className="text-blue-200 flex-shrink-0" />
+                  <h3 className="text-blue-100 text-xs lg:text-sm font-medium">Net Investment</h3>
                 </div>
-                <p className="text-white font-bold text-3xl">{formatCurrency(totals.totalInvested)}</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 pt-4 break-all">
+                  {formatCurrency(totals.totalInvested)}
+                </p>
               </div>
-              <div className="text-blue-200 bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-                <PiggyBank size={32} />
+              <div className="text-blue-200 bg-white/20 p-2 rounded-lg backdrop-blur-sm ml-2 flex-shrink-0">
+                <PiggyBank size={20} />
               </div>
             </div>
           </div>
 
           {/* Current Value Card */}
-          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 rounded-2xl shadow-xl transform hover:shadow-2xl transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <LineChart size={20} className="text-purple-200" />
-                  <h3 className="text-purple-100 text-sm font-medium uppercase tracking-wide">Market Value</h3>
+          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-3 md:p-4 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-300 min-h-[120px] md:min-h-[130px] flex-grow min-w-[250px]">
+            <div className="flex items-start justify-between h-full">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <LineChart size={16} className="text-purple-200 flex-shrink-0" />
+                  <h3 className="text-purple-100 text-xs font-medium uppercase tracking-wide truncate">Market Value</h3>
                 </div>
-                <p className="text-white font-bold text-3xl">{formatCurrency(totals.totalCurrentValue)}</p>
+                <p className="text-white font-bold text-lg md:text-xl 2xl:text-2xl leading-tight break-words">
+                  {formatCurrency(totals.totalCurrentValue)}
+                </p>
               </div>
-              <div className="text-purple-200 bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-                <LineChart size={32} />
+              <div className="text-purple-200 bg-white/20 p-2 rounded-lg backdrop-blur-sm ml-2 flex-shrink-0">
+                <LineChart size={20} />
               </div>
             </div>
           </div>
 
-          {/* Profit/Loss Card with Toggle */}
+          {/* Total Profit/Loss Card */}
           <div className={`${totals.totalProfitLoss >= 0
             ? 'bg-gradient-to-r from-green-500 to-emerald-600'
             : 'bg-gradient-to-r from-red-500 to-rose-600'
-          } p-6 rounded-2xl shadow-xl transform hover:shadow-2xl transition-all duration-300`}>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className={`${totals.totalProfitLoss >= 0 ? 'text-green-100' : 'text-red-100'} text-sm font-medium uppercase tracking-wide`}>
-                  Total P&L
-                </h3>
-                <p className="text-white font-bold text-3xl mt-2">{formatCurrency(totals.totalProfitLoss)}</p>
-                
-                {/* Dynamic Return Display */}
-                <div className="mt-3">
-                  <div className={`${
+          } p-3 md:p-4 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-300 min-h-[120px] md:min-h-[130px] flex-grow min-w-[250px]`}>
+            <div className="flex items-start justify-between h-full">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-2">
+                  {totals.totalProfitLoss >= 0 ? <TrendingUp size={16} className="flex-shrink-0" /> : <TrendingDown size={16} className="flex-shrink-0" />}
+                  <h3 className={`${totals.totalProfitLoss >= 0 ? 'text-green-100' : 'text-red-100'} text-xs font-medium uppercase tracking-wide truncate`}>
+                    Total P&L
+                  </h3>
+                </div>
+                <p className="text-white font-bold text-lg md:text-xl 2xl:text-2xl leading-tight break-words">
+                  {formatCurrency(totals.totalProfitLoss)}
+                </p>
+              </div>
+              <div className={`${totals.totalProfitLoss >= 0 ? 'text-green-200' : 'text-red-200'} bg-white/20 p-2 rounded-lg backdrop-blur-sm ml-2 flex-shrink-0`}>
+                {totals.totalProfitLoss >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Returns Card with Improved Toggle */}
+          <div className={`${
+            (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0
+              ? 'bg-gradient-to-r from-orange-500 to-amber-600'
+              : 'bg-gradient-to-r from-gray-600 to-slate-700'
+          } p-3 md:p-4 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-300 min-h-[120px] md:min-h-[130px] flex-grow min-w-[250px]`}>
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Percent size={16} className={`${
                     (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 
-                      ? 'bg-green-900/60 border-green-300/30' 
-                      : 'bg-red-900/60 border-red-300/30'
-                  } backdrop-blur-sm px-4 py-2 rounded-xl border inline-flex items-center gap-2`}>
-                    <span className="text-white text-sm font-medium">
-                      {returnType === 'absolute' ? 'Absolute:' : 'XIRR:'}
-                    </span>
-                    <span className="text-white font-bold text-xl">
-                      {formatPercent(returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn)}
-                    </span>
-                    <div className="text-white">
-                      {(returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 ? 
-                        <TrendingUp size={18} /> : <TrendingDown size={18} />}
-                    </div>
-                  </div>
+                      ? 'text-orange-200' 
+                      : 'text-gray-300'
+                  } flex-shrink-0`} />
+                  <h3 className={`${
+                    (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 
+                      ? 'text-orange-100' 
+                      : 'text-gray-200'
+                  } text-xs font-medium uppercase tracking-wide truncate`}>
+                    Returns
+                  </h3>
+                </div>
+                <div className={`${
+                  (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 
+                    ? 'text-orange-200' 
+                    : 'text-gray-300'
+                } bg-white/20 p-2 rounded-lg backdrop-blur-sm flex-shrink-0`}>
+                  <Percent size={16} />
                 </div>
               </div>
               
-              <div className={`${totals.totalProfitLoss >= 0 ? 'text-green-200' : 'text-red-200'} bg-white/20 p-3 rounded-xl backdrop-blur-sm`}>
-                {totals.totalProfitLoss >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
+              {/* Return Value */}
+              <div className="flex-1 mb-2">
+                <p className="text-white font-bold text-lg md:text-xl 2xl:text-2xl leading-tight">
+                  {formatPercent(returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn)}
+                </p>
+                <p className={`text-xs ${
+                  (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0 
+                    ? 'text-orange-200' 
+                    : 'text-gray-300'
+                } mt-1 font-medium`}>
+                  {returnType === 'absolute' ? 'Absolute Return' : 'XIRR (Annualized)'}
+                </p>
+              </div>
+
+              {/* Improved Toggle Switch */}
+              <div className="mt-auto">
+                <button
+                  onClick={() => setReturnType(returnType === 'absolute' ? 'xirr' : 'absolute')}
+                  className="w-full relative overflow-hidden group"
+                >
+                  {/* Toggle Track */}
+                  <div className="bg-white/20 rounded-full p-0.5 backdrop-blur-sm">
+                    <div className="flex relative">
+                      {/* Sliding Background */}
+                      <div 
+                        className={`absolute top-0.5 bottom-0.5 w-1/2 bg-white/40 rounded-full transition-transform duration-300 ease-in-out ${
+                          returnType === 'absolute' ? 'translate-x-0' : 'translate-x-full'
+                        }`}
+                      />
+                      
+                      {/* Toggle Options */}
+                      <div className={`flex-1 text-center py-1.5 px-2 rounded-full transition-colors duration-200 relative z-10 ${
+                        returnType === 'absolute' ? 'text-white' : 'text-white/70'
+                      }`}>
+                        <span className="text-xs font-semibold">ABS</span>
+                      </div>
+                      <div className={`flex-1 text-center py-1.5 px-2 rounded-full transition-colors duration-200 relative z-10 ${
+                        returnType === 'xirr' ? 'text-white' : 'text-white/70'
+                      }`}>
+                        <span className="text-xs font-semibold">XIRR</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Hover Effect */}
+                  <div className="absolute inset-0 bg-white/5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                </button>
               </div>
             </div>
           </div>
@@ -396,30 +467,6 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
               }`}
             >
               Loss
-            </button>
-          </div>
-
-          {/* Return Type Toggle */}
-          <div className="flex bg-slate-900/60 rounded-lg p-1 border border-gray-600">
-            <button
-              onClick={() => setReturnType('absolute')}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                returnType === 'absolute'
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              Abs %
-            </button>
-            <button
-              onClick={() => setReturnType('xirr')}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                returnType === 'xirr'
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              XIRR %
             </button>
           </div>
 
