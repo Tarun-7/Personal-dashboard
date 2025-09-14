@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { Home, CreditCard, BarChart3, Settings, Siren, Goal, ChevronDown, ChevronRight, List, PieChart, TrendingUp, DollarSign, Bitcoin, PiggyBank, Shield, Target, Bell, User, IndianRupee, Menu, X } from 'lucide-react';
+import { Home, CreditCard, BarChart3, Settings, Siren, Goal, ChevronDown, ChevronRight, PieChart, TrendingUp, DollarSign, Bitcoin, PiggyBank, Shield, Target, Bell, User, IndianRupee, Menu, X } from 'lucide-react';
 
 const sidebarItems = [
  { name: 'Dashboard', icon: Home },
  { 
-    name: 'INR Investments', 
-    icon: IndianRupee,
+    name: 'INR Investments', icon: IndianRupee,
  },
   { 
-    name: 'USD Investments', 
-    icon: DollarSign,
-    submenu: [
-     { name: 'Overview', path: 'usd-overview', icon: List },
-     { name: 'Stocks', path: 'usd-stocks', icon: TrendingUp },
-     { name: 'Crypto', path: 'usd-crypto', icon: Bitcoin }
-  ]
+    name: 'USD Investments', icon: DollarSign,
+  //   submenu: [
+  //    { name: 'Overview', path: 'usd-overview', icon: List },
+  //    { name: 'Stocks', path: 'usd-stocks', icon: TrendingUp },
+  //    { name: 'Crypto', path: 'usd-crypto', icon: Bitcoin }
+  // ]
  },
- {name:'Cash & Savings', icon: PiggyBank},
+ { name: 'Crypto Investments', icon: Bitcoin },
+ { name: 'Cash & Savings', icon: PiggyBank },
  { name: 'Upload', icon: CreditCard },
  { 
    name: 'Analytics', 
@@ -76,6 +75,26 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
       return isActive 
         ? 'bg-gradient-to-r from-orange-600 to-yellow-600' 
         : 'hover:bg-gradient-to-r hover:from-orange-600/20 hover:to-yellow-600/20';
+    } else if (itemName.includes('Crypto')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-purple-600 to-pink-600' 
+        : 'hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-pink-600/20';
+    } else if (itemName.includes('Cash')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-teal-600 to-cyan-600' 
+        : 'hover:bg-gradient-to-r hover:from-teal-600/20 hover:to-cyan-600/20';
+    } else if (itemName.includes('Liabilities')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-red-600 to-pink-600' 
+        : 'hover:bg-gradient-to-r hover:from-red-600/20 hover:to-pink-600/20';
+    } else if (itemName.includes('Goals')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-yellow-600 to-orange-600' 
+        : 'hover:bg-gradient-to-r hover:from-yellow-600/20 hover:to-orange-600/20';
+    } else if (itemName.includes('Settings')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-gray-600 to-gray-700' 
+        : 'hover:bg-gradient-to-r hover:from-gray-600/20 hover:to-gray-700/20';
     }
     return isActive 
       ? 'bg-gradient-to-r from-gray-600 to-gray-700' 

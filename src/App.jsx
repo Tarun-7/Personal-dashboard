@@ -10,12 +10,14 @@ import InrInvestmentsOverview from './pages/INR/InrOverviewPage';
 import CashSavingsPage from './pages/CashSavingsPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
 import UsdCryptoPage from './pages/USD/UsdCryptoPage';
+import LoadingPage from './pages/LoadingPage';
 
 import DataLoadingService from './services/DataLoadingService';
 import InvestmentCalculationService from './services/InvestmentCalculationService';
 import ExchangeRateService from './services/ExchangeRateService';
 import MutualFundCalculationService from './services/MutualFundCalculationService';
 import SavingsCalculationService from './services/SavingsCalculationService'; 
+import UsdStocksCalculationService from './services/UsdStocksCalculationService';
 
 import { 
   Home, 
@@ -28,29 +30,14 @@ import {
 
 
 const Dashboard = () => {
+
+  // Reviewed states
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [brokerType, setBrokerType] = useState('Kuvera');
   const [uploadedFiles, setUploadedFiles] = useState({
     kuvera: null,
     ibkr: null
   });
-
-  const activityData = [
-    { month: 'Jan', earning: 4, spent: 2 },
-    { month: 'Feb', earning: 3, spent: 4 },
-    { month: 'Mar', earning: 5, spent: 3 },
-    { month: 'Apr', earning: 4, spent: 3 },
-    { month: 'May', earning: 6, spent: 2 },
-    { month: 'Jun', earning: 3, spent: 4 },
-    { month: 'Jul', earning: 5, spent: 3 },
-    { month: 'Aug', earning: 4, spent: 2 },
-    { month: 'Sep', earning: 3, spent: 3 },
-    { month: 'Oct', earning: 5, spent: 2 },
-    { month: 'Nov', earning: 4, spent: 3 },
-    { month: 'Dec', earning: 6, spent: 2 }
-  ];
-
-  // Reviewed
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rupeeInvestments, setRupeeInvestments] = useState(0);
   const [InrMfValue, setInrMfvalue] = useState(0);
@@ -71,21 +58,33 @@ const Dashboard = () => {
     itemCount: 0,
     error: null
   });
-
-
-  //Reviewed states for investments and transactions
+  const [usdStocksSummary, setUsdStocksSummary] = useState({
+    totalInvested: 0,
+    totalCurrentValue: 0,
+    totalProfitLoss: 0,
+    absoluteReturn: 0,
+    fundsData: []
+  });
   const [kuveraTransactions, setKuveraTransactions] = useState([]);
   const [ibkrTransactions, setIbkrTransactions] = useState([]);
   const [usdInvestments, setUsdInvestments] = useState(0);
-  const [euroInvestments, setEuroInvestments] = useState(7000);
   const [netWorth, setNetWorth] = useState(0);
-  const [goalAmount, setGoalAmount] = useState(10000000); // Set your goal amount here
   const [usdInrRate, setUsdInrRate] = useState(null);
   const [euroInrRate, setEuroInrRate] = useState(null);
-  const [netWorthCurrency, setNetWorthCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
-  const [goalCurrency, setGoalCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
+  const [netWorthCurrency, setNetWorthCurrency] = useState('INR');
+  const [euroInvestments, setEuroInvestments] = useState(7000);  // Assuming a static value for Euro investments for now
+  const [loadingStates, setLoadingStates] = useState({
+    savings: true,
+    mutualFunds: false,
+    usdStocks: false,
+    exchangeRates: true,
+    initialData: true
+  });
 
-  const [balances, setBalances] = useState([
+  // Review states for investments and transactions
+  const [goalAmount, setGoalAmount] = useState(10000000); // Set your goal amount here // 'INR' or 'USD' or 'EUR
+  const [goalCurrency, setGoalCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
+  const [liability, setLiability] = useState([
     {
       id: 1,
       date: "2024-01-15",
@@ -101,6 +100,20 @@ const Dashboard = () => {
       note: "After payment"
     }
   ]);
+  const activityData = [
+    { month: 'Jan', earning: 4, spent: 2 },
+    { month: 'Feb', earning: 3, spent: 4 },
+    { month: 'Mar', earning: 5, spent: 3 },
+    { month: 'Apr', earning: 4, spent: 3 },
+    { month: 'May', earning: 6, spent: 2 },
+    { month: 'Jun', earning: 3, spent: 4 },
+    { month: 'Jul', earning: 5, spent: 3 },
+    { month: 'Aug', earning: 4, spent: 2 },
+    { month: 'Sep', earning: 3, spent: 3 },
+    { month: 'Oct', earning: 5, spent: 2 },
+    { month: 'Nov', earning: 4, spent: 3 },
+    { month: 'Dec', earning: 6, spent: 2 }
+  ];
 
   // Update rupee investments whenever mutual fund or savings values change
   useEffect(() => {
@@ -111,16 +124,27 @@ const Dashboard = () => {
   useEffect(() => {
     const loadSavingsData = async () => {
       try {
+        updateLoadingState('savings', true);
         const summary = await SavingsCalculationService.calculateSavingsSummary();
         setSavingsSummary(summary);
         setInrSavingsValue(summary.totalAmount); // Update the dashboard value
       } catch (error) {
         console.error('Error loading savings data:', error);
+      } finally {
+        updateLoadingState('savings', false);
       }
     };
 
     loadSavingsData();
   }, []);
+
+  // Helper function to update loading state
+  const updateLoadingState = (key, value) => {
+    setLoadingStates(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Check if any calculations are still loading
+  const isLoading = Object.values(loadingStates).some(state => state === true);
 
   // Function to handle savings data updates from the savings page
   const handleSavingsUpdate = (updatedSummary) => {
@@ -128,10 +152,12 @@ const Dashboard = () => {
     setInrSavingsValue(updatedSummary.totalAmount);
   };
 
+  // Calculate mutual fund summary when Kuvera transactions change
   useEffect(() => {
     const calculateMutualFundSummary = async () => {
       if (kuveraTransactions.length > 0) {
         try {
+          updateLoadingState('mutualFunds', true);
           const summary = await MutualFundCalculationService.calculateMutualFundSummary(kuveraTransactions);
           setMutualFundSummary(summary);
           setInrMfvalue(summary.totalCurrentValue);
@@ -147,23 +173,70 @@ const Dashboard = () => {
             fundsData: []
           };
           setMutualFundSummary(basicSummary);
+        } finally {
+          updateLoadingState('mutualFunds', false);
         }
+      } else {
+        updateLoadingState('mutualFunds', false);
       }
     };
 
     calculateMutualFundSummary();
   }, [kuveraTransactions]);
 
+// Calculate USD stocks summary when IBKR transactions change
+useEffect(() => {
+  const calculateUsdStocksSummary = async () => {
+    if (ibkrTransactions.length > 0) {
+      try {
+        updateLoadingState('usdStocks', true);
+        // Import or create a UsdStocksCalculationService similar to MutualFundCalculationService
+        const summary = await UsdStocksCalculationService.calculateUsdStocksSummary(ibkrTransactions);
+        setUsdStocksSummary(summary);
+        setUsdInvestments(summary.totalCurrentValue);
+        console.log('USD Stocks summary calculated:', summary);
+      } catch (error) {
+        console.error('Error calculating USD stocks summary:', error);
+        // Fallback to basic calculation
+        const basicValue = InvestmentCalculationService.calculateTotalTradeValue(ibkrTransactions);
+        setUsdInvestments(basicValue);
+        setUsdStocksSummary({
+          totalInvested: basicValue,
+          totalCurrentValue: basicValue,
+          totalProfitLoss: 0,
+          absoluteReturn: 0,
+          fundsData: []
+        });
+      } finally {
+        updateLoadingState('usdStocks', false);
+      }
+    } else {
+      setUsdInvestments(0);
+      updateLoadingState('usdStocks', false);
+    }
+  };
+
+  calculateUsdStocksSummary();
+}, [ibkrTransactions]);
+
+
   // Fetch exchange rates
   useEffect(() => {
     const loadExchangeRates = async () => {
-      const rates = await ExchangeRateService.fetchExchangeRates();
-      if (rates.success) {
-        setUsdInrRate(rates.usdInr);
-        setEuroInrRate(rates.euroInr);
+      try {
+        updateLoadingState('exchangeRates', true);
+        const rates = await ExchangeRateService.fetchExchangeRates();
+        if (rates.success) {
+          setUsdInrRate(rates.usdInr);
+          setEuroInrRate(rates.euroInr);
+          console.log('Exchange rates loaded successfully');
+        }
+      } catch (error) {
+        console.error('Error loading exchange rates:', error);
+      } finally {
+        updateLoadingState('exchangeRates', false);
       }
     };
-
     loadExchangeRates();
   }, []);
 
@@ -194,22 +267,32 @@ const Dashboard = () => {
   // Load initial data
   useEffect(() => {
     const loadInitialData = async () => {
-      // Load Kuvera data
-      const kuveraData = await DataLoadingService.loadKuveraData();
-      if (kuveraData.success) {
-        setKuveraTransactions(kuveraData.transactions);
-        console.log('Initial Kuvera file loaded successfully');
-      }
+      try {
+        updateLoadingState('initialData', true);
+        
+        // Load Kuvera data
+        const kuveraData = await DataLoadingService.loadKuveraData();
+        if (kuveraData.success) {
+          setKuveraTransactions(kuveraData.transactions);
+          console.log('Initial Kuvera file loaded successfully');
+          // This will trigger mutual fund calculation
+          updateLoadingState('mutualFunds', true);
+        }
 
-      // Load IBKR data
-      const ibkrData = await DataLoadingService.loadIbkrData();
-      if (ibkrData.success) {
-        setIbkrTransactions(ibkrData.transactions);
-        setUsdInvestments(ibkrData.totalValue);
-        console.log('Initial IBKR file loaded successfully');
+        // Load IBKR data
+        const ibkrData = await DataLoadingService.loadIbkrData();
+        if (ibkrData.success) {
+          setIbkrTransactions(ibkrData.transactions);
+          console.log('Initial IBKR file loaded successfully');
+          // This will trigger USD stocks calculation
+          updateLoadingState('usdStocks', true);
+        }
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      } finally {
+        updateLoadingState('initialData', false);
       }
     };
-
     loadInitialData();
   }, []);
 
@@ -245,14 +328,14 @@ const Dashboard = () => {
     if (!selectedFile) return;
 
     try {
+      updateLoadingState('mutualFunds', true);
       const result = await DataLoadingService.processKuveraFile(selectedFile);
-      
       setKuveraTransactions(result.transactions);
       setActiveTab("inr-mutual-funds");
       setBrokerType("Kuvera");
     } catch (error) {
       console.error('Error processing Kuvera file:', error);
-      // Handle error appropriately
+      updateLoadingState('mutualFunds', false);
     }
   };
 
@@ -261,35 +344,22 @@ const Dashboard = () => {
     if (!selectedFile) return;
 
     try {
+      updateLoadingState('usdStocks', true);
       const result = await DataLoadingService.processIbkrFile(selectedFile);
-      
       setIbkrTransactions(result.transactions);
-      setUsdInvestments(result.totalValue);
       setActiveTab('usd-stocks');
       setBrokerType("Interactive Broker");
     } catch (error) {
       console.error('Error processing IBKR file:', error);
-      // Handle error appropriately
+      updateLoadingState('usdStocks', false);
     }
   };
 
-    const [liability, setLiability] = useState([
-    {
-      id: 1,
-      date: "2024-01-15",
-      value: 185000,
-      currency: "USD",
-      note: "Monthly statement balance"
-    },
-    {
-      id: 2,
-      date: "2024-02-15", 
-      value: 182000,
-      currency: "USD",
-      note: "After payment"
-    }
-  ]);
-
+  if (isLoading) {
+    return (
+       <LoadingPage />
+      );
+  }
 
   return (
     <div className="flex h-screen bg-slate-950 text-white">
@@ -359,10 +429,10 @@ const Dashboard = () => {
             />
           )}
           
-          {activeTab === 'usd-stocks' && (
+          {activeTab === 'USD Investments' && (
             <UsdStocksPage
               transactions={ibkrTransactions}
-              onTotalMarketValueChange={setUsdInvestments}
+              usdStocksSummary={usdStocksSummary}
             />
           )}  
 

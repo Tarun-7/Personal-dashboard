@@ -35,7 +35,6 @@ const Dashboard = ({
     </div>
 
       {/* Net Worth Card */}
-      {usdInrRate !== null && euroInrRate !== null ? (
       <NetWorthCard
         netWorth={netWorth}
         netWorthCurrency={netWorthCurrency}
@@ -47,9 +46,6 @@ const Dashboard = ({
         euroInrRate={euroInrRate}
         getGoalAmountInCurrency={getGoalAmountInCurrency}
       />
-          ) : (
-      <div>Loading currency rates...</div>
-    )}
 
       {/* Investment Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -63,7 +59,7 @@ const Dashboard = ({
           icons={<IndianRupee className="h-6 w-6 text-white" />}
           badgeGradient={["#3b82f6", "#2563eb"]}
           amountLocale="en-IN"
-          onClick={() => setActiveTab('inr-overview')} // Sidebar path
+          onClick={() => setActiveTab('INR Investments')} // Sidebar path
         />
 
         <InvestmentCard

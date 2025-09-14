@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
-import { ChartNoAxesCombined, SortDesc, SortAsc, Search, TrendingUp, TrendingDown, Download, Filter, BarChart3, List, BarChart, HandCoins, PiggyBank, LineChart, ToggleLeft, ToggleRight, Percent } from 'lucide-react';
+import { Eye, X, ChartNoAxesCombined, SortDesc, SortAsc, Search, TrendingUp, TrendingDown, Download, Filter, BarChart3, List, BarChart, HandCoins, PiggyBank, LineChart, ToggleLeft, ToggleRight, Percent } from 'lucide-react';
 import LoadingScreen from '../../components/LoadingScreen';
 import PortfolioCard from '../../components/PortfolioCard';
 import ReturnsCard from '../../components/ReturnsCard';
+import SummaryCard from '../../components/SummaryCard';
 
 // Fund Badge Component
 const FundBadge = ({ fundName }) => {
@@ -272,42 +273,77 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
       <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-            Mutual Funds Portfolio
-          </h1>
-          <p className="text-gray-400">Track your mutual fund investments and performance</p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
+                Mutual Funds Portfolio
+              </h1>
+              <p className="text-gray-400">Track your mutual fund investments and performance</p>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <button
+                onClick={exportToCSV}
+                disabled={transactions.length === 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  transactions.length === 0
+                    ? 'bg-slate-600 text-slate-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl'
+                }`}
+                title="Export mutual funds data to CSV"
+              >
+                <Download size={20} />
+                Export
+              </button>
+
+              <button
+                // onClick={() => setShowBalance(!showBalance)}
+                className="p-3 bg-gray-800 rounded-xl hover:bg-gray-700 transition-colors"
+              >
+                {true ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Summary Cards - Improved responsive layout */}
         <div className="flex flex-col lg:flex-row gap-6 mb-8 lg:flex-nowrap">
           {/* Total Invested Card */}
-          <PortfolioCard         
+          <SummaryCard
             title="Net Investment"
             value={formatCurrency(totals.totalInvested)}
+            subtitle="Total invested amount"
             icon={PiggyBank}
-            gradientFrom="from-blue-500"
-            gradientTo="to-cyan-600"
-            iconColor="text-blue-100"
-            titleColor="text-blue-100"
+            statusIcon={PiggyBank}
+            gradient="from-blue-500 to-cyan-600"
+            textColor="text-blue-100"
+            pulseIcon={true}
           />
 
           {/* Current Value Card */}
-          <PortfolioCard
+          <SummaryCard
             title="Market Value"
             value={formatCurrency(totals.totalCurrentValue)}
             icon={LineChart}
-            gradientFrom="from-purple-500"
-            gradientTo="to-indigo-600"
-            iconColor="text-purple-100"
-            titleColor="text-purple-100"
+            subtitle="Total current value"
+            statusIcon={LineChart}
+            gradient="from-purple-500 to-indigo-600"
+            textColor="text-purple-100"
+            pulseIcon={true}
           />
 
           {/* Total Profit/Loss Card */}
-          <PortfolioCard
+          <SummaryCard
             title="Total P&L"
             value={formatCurrency(totals.totalProfitLoss)}
-            icon={null} // Will be determined by isProfit
-            isProfit={totals.totalProfitLoss >= 0}
+            icon={
+              totals.totalProfitLoss >= 0 ? TrendingUp : TrendingDown
+            }
+            subtitle="Total Profit / Loss"
+            statusIcon={
+              totals.totalProfitLoss >= 0 ? TrendingUp : TrendingDown
+            }
+            gradient={totals.totalProfitLoss >= 0 ? "from-emerald-500 to-green-600" : "from-red-500 to-rose-600"}
           />
 
           {/* Enhanced Returns Card with Improved Toggle */}
@@ -321,62 +357,142 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
         </div>
         
         {/* Compact Filter Controls */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          
-          {/* Search */}
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search funds..."
-              value={state.searchTerm}
-              onChange={(e) => dispatch({ type: ACTIONS.SET_SEARCH, payload: e.target.value })}
-              className="w-full pl-9 pr-3 py-2 bg-slate-900/60 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
-            />
+        <div className="bg-gradient-to-r from-slate-900/40 to-slate-800/40 backdrop-blur-xl rounded-2xl p-5 mb-8 border border-slate-700/50 shadow-xl">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+            
+            {/* Search Section */}
+            <div className="flex-1 min-w-0">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search by Fund or company name..."
+                  value={state.searchTerm}
+                  onChange={(e) => dispatch({ type: ACTIONS.SET_SEARCH, payload: e.target.value })}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 text-sm backdrop-blur-sm"
+                />
+                {state.searchTerm && (
+                  <button
+                    onClick={() => dispatch({ type: ACTIONS.SET_SEARCH, payload: '' })}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white p-1 hover:bg-slate-700 rounded-full transition-all duration-200"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Section */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              
+              {/* Filter Buttons */}
+              <div className="flex bg-slate-800/60 backdrop-blur-sm rounded-xl p-1.5 border border-slate-600/30 shadow-inner">
+                <button
+                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
+                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    state.filterBy === 'all'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 transform scale-105'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${
+                    state.filterBy === 'all' ? 'bg-white/80' : 'bg-slate-500'
+                  }`}></div>
+                  All Stocks
+                  {state.filterBy === 'all' && (
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-blue-600/20 animate-pulse"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'profit' })}
+                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    state.filterBy === 'profit'
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 transform scale-105'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <TrendingUp size={14} className={state.filterBy === 'profit' ? 'text-white' : 'text-emerald-400'} />
+                  Profitable
+                  {state.filterBy === 'profit' && (
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/20 to-green-600/20 animate-pulse"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'loss' })}
+                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    state.filterBy === 'loss'
+                      ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/25 transform scale-105'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <TrendingDown size={14} className={state.filterBy === 'loss' ? 'text-white' : 'text-red-400'} />
+                  Loss Making
+                  {state.filterBy === 'loss' && (
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-red-500/20 to-rose-600/20 animate-pulse"></div>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Results Counter */}
+            <div className="text-sm text-slate-400 bg-slate-800/30 px-3 py-2 rounded-lg border border-slate-600/30">
+              <span className="font-medium text-slate-300">{filteredAndSortedData.length}</span> 
+              <span className="ml-1">
+                {filteredAndSortedData.length === 1 ? 'Fund' : 'Funds'}
+              </span>
+            </div>
+
           </div>
 
-          {/* Fund Filter Buttons */}
-          <div className="flex bg-slate-900/60 rounded-lg p-1 border border-gray-600">
-            <button
-              onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                state.filterBy === 'all'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'profit' })}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                state.filterBy === 'profit'
-                  ? 'bg-green-600 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              Profit
-            </button>
-            <button
-              onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'loss' })}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                state.filterBy === 'loss'
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              Loss
-            </button>
-          </div>
-
-          {/* Export Button */}
-          <button
-            onClick={exportToCSV}
-            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
-          >
-            <Download size={16} />
-            Export
-          </button>
+          {/* Active Filters Indicator */}
+          {(state.searchTerm || state.filterBy !== 'all') && (
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700/30">
+              <span className="text-xs text-slate-400 font-medium">Active filters:</span>
+              <div className="flex flex-wrap gap-2">
+                {state.searchTerm && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs font-medium border border-blue-500/30">
+                    <Search size={12} />
+                    "{state.searchTerm}"
+                    <button
+                      onClick={() => dispatch({ type: ACTIONS.SET_SEARCH, payload: '' })}
+                      className="ml-1 hover:bg-blue-500/30 rounded-full p-0.5 transition-colors"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                )}
+                {state.filterBy !== 'all' && (
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                    state.filterBy === 'profit' 
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      : 'bg-red-500/20 text-red-300 border-red-500/30'
+                  }`}>
+                    {state.filterBy === 'profit' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {state.filterBy === 'profit' ? 'Profitable only' : 'Loss making only'}
+                    <button
+                      onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
+                      className="ml-1 hover:bg-white/10 rounded-full p-0.5 transition-colors"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                )}
+              </div>
+              
+              {/* Clear All Filters */}
+              <button
+                onClick={() => {
+                  dispatch({ type: ACTIONS.SET_SEARCH, payload: '' });
+                  dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' });
+                }}
+                className="text-xs text-slate-400 hover:text-white underline underline-offset-2 transition-colors ml-auto"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Loading State */}
@@ -386,7 +502,7 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
 
         {/* Portfolio Table */}
         {!state.loading && filteredAndSortedData.length > 0 && (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8">
+          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-2">
             <div className="max-w-7xl mx-auto">              
               <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
                 <div className="overflow-x-auto">
@@ -407,7 +523,7 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
                           onClick={() => handleSort('units')}
                         >
                           <span className="inline-flex items-center justify-end w-full">
-                            Units
+                            Quantity
                             <SortIcon columnKey="units" />
                           </span>
                         </th>
@@ -458,6 +574,7 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
                             <div className="text-slate-200 font-semibold text-base">
                               {Number(fund.totalUnits || 0).toFixed(2)}
                             </div>
+                            <div className="text-xs text-slate-500 mt-1">units</div>
                           </td>
                           <td className="px-6 py-5 text-right">
                             <div className="text-slate-200 font-semibold text-base">

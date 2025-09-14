@@ -1,29 +1,22 @@
-import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
-import { Search, TrendingUp, TrendingDown, AlertCircle, Loader2, Download, Filter, SortAsc, SortDesc, BarChart3, List, LineChart, Building2, PiggyBank } from 'lucide-react';
+import React, { useState, useMemo, useReducer } from 'react';
+import { X, Search, TrendingUp, TrendingDown, AlertCircle, Download, SortAsc, SortDesc, BarChart3, List, LineChart, Building2, PiggyBank, ChartNoAxesCombined, Filter, Menu } from 'lucide-react';
 import LoadingScreen from '../../components/LoadingScreen';
 import PortfolioCard from '../../components/PortfolioCard';
 import ReturnsCard from '../../components/ReturnsCard';
 
-// Cache configuration
-const CACHE_KEY = 'usd_stock_price_map';
-const CACHE_TIMESTAMP_KEY = 'usd_stock_price_map_timestamp';
-const CACHE_EXPIRY_MS = 3600000; // 1 hour
-
-// Environment variables for APIs
-const FINNHUB_API_KEY = import.meta.env.VITE_FINNHUB_API_KEY;
-const ALPHA_VANTAGE_API_KEY = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY;
-
 // Symbol Badge Component
-const SymbolBadge = ({ symbol }) => (
-  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-semibold shadow-sm">
-    {symbol}
-  </span>
-);
+const SymbolBadge = ({ symbol }) => {
+  
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-semibold shadow-sm`}>
+      {symbol}
+    </span>
+  );
+};
 
 // Action types for reducer
 const ACTIONS = {
   SET_LOADING: 'SET_LOADING',
-  SET_STOCK_PRICES: 'SET_STOCK_PRICES',
   SET_ERROR: 'SET_ERROR',
   SET_SEARCH: 'SET_SEARCH',
   SET_SORT: 'SET_SORT',
@@ -32,8 +25,7 @@ const ACTIONS = {
 
 // Initial state
 const initialState = {
-  stockPrices: {},
-  loading: true,
+  loading: false,
   error: null,
   searchTerm: '',
   sortBy: 'marketValue',
@@ -46,8 +38,6 @@ const stocksReducer = (state, action) => {
   switch (action.type) {
     case ACTIONS.SET_LOADING:
       return { ...state, loading: action.payload };
-    case ACTIONS.SET_STOCK_PRICES:
-      return { ...state, stockPrices: action.payload, loading: false };
     case ACTIONS.SET_ERROR:
       return { ...state, error: action.payload, loading: false };
     case ACTIONS.SET_SEARCH:
@@ -61,403 +51,115 @@ const stocksReducer = (state, action) => {
   }
 };
 
-const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => {
+const UsdStocksDashboard = ({ 
+  transactions = [], 
+  usdStocksSummary = {}
+}) => {
   const [state, dispatch] = useReducer(stocksReducer, initialState);
   const [selectedStock, setSelectedStock] = useState('');
   const [showTransactions, setShowTransactions] = useState(false);
   const [returnType, setReturnType] = useState('absolute');
-  
-  // Refs for fetching optimization
-  const fetchedSymbolsRef = useRef(new Set());
-  const prevTotalMarketValue = useRef(null);
 
-  // XIRR calculation function
-  const calculateXIRR = (transactions, currentValue) => {
-    if (!transactions || transactions.length === 0) return 0;
-
-    const cashFlows = [];
-    const dates = [];
-
-    transactions.forEach(txn => {
-      let dateStr = txn.DateTime;
-      if (!dateStr) return;
-      const date = new Date(dateStr.replace(';', ' '));
-      if (isNaN(date.getTime())) return;
-
-      const tradeMoney = parseFloat(txn.TradeMoney) || 0;
-      const ibCommission = parseFloat(txn.IBCommission) || 0;
-
-      const cashFlow = tradeMoney + ibCommission; // Includes IB commission cost
-
-      if (cashFlow !== 0) {
-        cashFlows.push(cashFlow);
-        dates.push(date);
-      }
-    });
-
-    if (currentValue > 0) {
-      cashFlows.push(currentValue);
-      dates.push(new Date());
-    }
-
-    if (cashFlows.length < 2) return 0;
-
-    // Check if cash flows have both positive and negative
-    const hasPositive = cashFlows.some(c => c > 0);
-    const hasNegative = cashFlows.some(c => c < 0);
-    if (!hasPositive || !hasNegative) return 0;
-
-    const npv = (rate) => {
-      const baseDate = dates[0];
-      return cashFlows.reduce((acc, val, i) => {
-        const diff = (dates[i] - baseDate) / (1000 * 3600 * 24);
-        const years = diff / 365;
-        return acc + val / Math.pow(1 + rate, years);
-      }, 0);
-    };
-
-    const npvDerivative = (rate) => {
-      const baseDate = dates[0];
-      return cashFlows.reduce((acc, val, i) => {
-        if (i === 0) return acc;
-        const diff = (dates[i] - baseDate) / (1000 * 3600 * 24);
-        const years = diff / 365;
-        return acc - (years * val) / Math.pow(1 + rate, years + 1);
-      }, 0);
-    };
-
-    // Newton-Raphson method
-    let rate = 0.1;
-    const tolerance = 1e-7;
-    const maxIter = 100;
-
-    for (let i = 0; i < maxIter; i++) {
-      const val = npv(rate);
-      if (Math.abs(val) < tolerance) return rate;
-      const deriv = npvDerivative(rate);
-      if (Math.abs(deriv) < tolerance) break;
-
-      const newRate = rate - val / deriv;
-      if (Math.abs(newRate - rate) < tolerance) return newRate;
-      rate = newRate;
-    }
-
-    // Fallback: bisection method
-    let lower = -0.9999;
-    let upper = 10;
-    let mid = rate;
-
-    for (let i = 0; i < 50; i++) {
-      mid = (lower + upper) / 2;
-      const val = npv(mid);
-      if (Math.abs(val) < tolerance) return mid;
-
-      if (npv(lower) * val < 0) {
-        upper = mid;
-      } else {
-        lower = mid;
-      }
-
-      if (Math.abs(upper - lower) < tolerance) return mid;
-    }
-
-    return 0;
-  };
-
-
-  // Filter transactions - only STK (stocks), no CASH
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(txn => {
-      const assetClass = txn.AssetClass;
-      const symbol = txn.Symbol;
-      
-      // Only include STK (stocks), exclude CASH
-      return assetClass === 'STK' && symbol && symbol.length > 0;
-    });
-  }, [transactions]);
-
-  // Get unique symbols
-  const uniqueSymbols = useMemo(() => {
-    return [...new Set(filteredTransactions.map(txn => txn.Symbol).filter(Boolean))];
-  }, [filteredTransactions]);
-
-  // Fetch stock prices with special handling for VUAA
-  useEffect(() => {
-    const fetchStockPrices = async () => {
-      // Check cache first
-      const cachedPrices = localStorage.getItem(CACHE_KEY);
-      const cachedTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
-      const now = Date.now();
-
-      if (cachedPrices && cachedTimestamp && now - Number(cachedTimestamp) < CACHE_EXPIRY_MS) {
-        const parsedPrices = JSON.parse(cachedPrices);
-        dispatch({ type: ACTIONS.SET_STOCK_PRICES, payload: parsedPrices });
-        fetchedSymbolsRef.current = new Set(Object.keys(parsedPrices));
-        return;
-      }
-
-      const newSymbols = uniqueSymbols.filter(sym => !fetchedSymbolsRef.current.has(sym));
-      if (newSymbols.length === 0) {
-        dispatch({ type: ACTIONS.SET_LOADING, payload: false });
-        return;
-      }
-
-      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
-      
-      try {
-        let newPrices = {};
-
-        for (const symbol of newSymbols) {
-          try {
-            let price = 0;
-            console.log(`Fetching price for ${symbol}`);
-
-            // Special handling for VUAA - use Alpha Vantage like in old IBKR transactions
-            if (symbol === 'VUAA') {
-              const symbolForApi = `${symbol}.LON`;
-              const apiRes = await fetch(
-                `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbolForApi)}&apikey=${ALPHA_VANTAGE_API_KEY}`
-              );
-              
-              if (apiRes.ok) {
-                const apiData = await apiRes.json();
-                console.log(`Alpha Vantage response for ${symbol}:`, apiData);
-                price = Number(apiData?.['Global Quote']?.['05. price']) || 0;
-              } else {
-                console.log(`Alpha Vantage API error for ${symbol}:`, apiRes.status, apiRes.statusText);
-              }
-            } else {
-              // Use Finnhub for other US stocks
-              const apiRes = await fetch(
-                `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_API_KEY}`
-              );
-              
-              if (apiRes.ok) {
-                const apiData = await apiRes.json();
-                console.log(`Finnhub response for ${symbol}:`, apiData);
-                price = Number(apiData?.c) || 0;
-              } else {
-                console.log(`Finnhub API error for ${symbol}:`, apiRes.status, apiRes.statusText);
-              }
-            }
-
-            console.log(`Final price for ${symbol}: ${price}`);
-            newPrices[symbol] = price;
-            fetchedSymbolsRef.current.add(symbol);
-
-            // Rate limiting
-            await new Promise(r => setTimeout(r, 150));
-
-          } catch (error) {
-            console.log(`Error fetching price for ${symbol}:`, error);
-            newPrices[symbol] = 0;
-            fetchedSymbolsRef.current.add(symbol);
-          }
-        }
-
-        const updatedPrices = { ...state.stockPrices, ...newPrices };
-        dispatch({ type: ACTIONS.SET_STOCK_PRICES, payload: updatedPrices });
-        
-        // Cache the results
-        localStorage.setItem(CACHE_KEY, JSON.stringify(updatedPrices));
-        localStorage.setItem(CACHE_TIMESTAMP_KEY, now.toString());
-
-      } catch (error) {
-        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to fetch stock prices' });
-      }
-    };
-
-    if (uniqueSymbols.length > 0) {
-      fetchStockPrices();
-    } else {
-      dispatch({ type: ACTIONS.SET_LOADING, payload: false });
-    }
-  }, [uniqueSymbols, filteredTransactions]);
-
-  // Process and group transactions by stock with CORRECT calculations
+  // Use pre-calculated data from usdStocksSummary prop
   const processedData = useMemo(() => {
-    if (!filteredTransactions || filteredTransactions.length === 0) return [];
+    const summary = usdStocksSummary || {};
+    const stocksData = summary.stocksData || [];
     
-    const stockMap = new Map();
+    return {
+      stocksData,
+      stockGroups: stocksData.reduce((acc, stock) => {
+        acc[stock.symbol] = stock;
+        return acc;
+      }, {}),
+      totals: {
+        totalInvested: summary.totalInvested || 0,
+        totalCurrentValue: summary.totalCurrentValue || 0,
+        totalProfitLoss: summary.totalProfitLoss || 0,
+        absoluteReturn: summary.absoluteReturn || 0,
+        xirrReturn: summary.xirrReturn || 0
+      },
+      stocksArray: stocksData
+    };
+  }, [usdStocksSummary]);
 
-    filteredTransactions.forEach(transaction => {
-      const symbol = transaction.Symbol;
-      const qty = parseFloat(transaction.Quantity) || 0;
-      const investedAmount = parseFloat(transaction.TradeMoney) || 0; // Your specified field
-      const ibCommission = parseFloat(transaction.IBCommission) || 0; // Your specified field
-      const fifoPnlRealized = parseFloat(transaction.FifoPnlRealized) || 0; // Your specified field
-      const tradePrice = parseFloat(transaction.TradePrice) || 0;
-      
-      if (!stockMap.has(symbol)) {
-        stockMap.set(symbol, {
-          symbol,
-          companyName: transaction.Description || 'No Description', // Company name from Description
-          totalQuantity: 0,
-          totalAmount: 0, // Sum of TradeMoney
-          totalIbCommission: 0, // Sum of IBCommission
-          totalFifoPnlRealized: 0, // Sum of FifoPnlRealized
-          averageUnitPrice: 0,
-          rows: []
-        });
-      }
+  // Filter and sort the stocks data
+  const filteredAndSortedData = useMemo(() => {
+    let filtered = processedData.stocksArray || [];
 
-      const stockData = stockMap.get(symbol);
-      stockData.rows.push(transaction);
-
-      // Sum the quantities and amounts as per your specification
-      stockData.totalQuantity += qty;
-      stockData.totalAmount += investedAmount; // TradeMoney
-      stockData.totalIbCommission += ibCommission; // IBCommission
-      stockData.totalFifoPnlRealized += fifoPnlRealized; // FifoPnlRealized
-
-      // Calculate average unit price
-      if (stockData.totalQuantity > 0) {
-        stockData.averageUnitPrice = (Math.abs(stockData.totalAmount) + stockData.totalIbCommission) / stockData.totalQuantity;
-
-      }
-    });
-
-    return Array.from(stockMap.values())
-      .filter(stock => stock.totalQuantity > 0.0001) // Filter out stocks with zero or near-zero quantities
-      .map(stock => {
-        const currentPrice = state.stockPrices[stock.symbol] || 0;
-        const totalMarketValue = currentPrice * stock.totalQuantity; // Current market value
-        
-        // Your specified calculation: unrealizedGains = totalMarketValue - totalIbCommission - totalAmount
-        const unrealizedGains = totalMarketValue - stock.totalIbCommission - Math.abs(stock.totalAmount);
-        
-        const profitLoss = unrealizedGains + stock.totalFifoPnlRealized; // Total P&L
-        const netInvestment = Math.abs(stock.totalAmount) + Math.abs(stock.totalIbCommission); // Total invested
-        const profitLossPercent = netInvestment > 0 ? (profitLoss / netInvestment) * 100 : 0;
-        const xirrPercent = calculateXIRR(stock.rows, totalMarketValue) * 100;
-
-        return {
-          ...stock,
-          currentPrice,
-          currentValue: totalMarketValue,
-          netInvestment,
-          unrealizedGains,
-          profitLoss,
-          profitLossPercent,
-          xirrPercent
-        };
-      });
-  }, [filteredTransactions, state.stockPrices]);
-
-
-  // Apply search and filter
-  const filteredData = useMemo(() => {
-    let filtered = processedData;
-
+    // Apply search filter
     if (state.searchTerm) {
-      filtered = filtered.filter(item =>
-        item.symbol.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
-        item.companyName.toLowerCase().includes(state.searchTerm.toLowerCase())
+      filtered = filtered.filter(stock =>
+        stock.symbol.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
+        stock.companyName.toLowerCase().includes(state.searchTerm.toLowerCase())
       );
     }
 
+    // Apply profit/loss filter
     if (state.filterBy === 'profit') {
-      filtered = filtered.filter(item => item.profitLoss > 0);
+      filtered = filtered.filter(stock => (stock.profitLoss || 0) > 0);
     } else if (state.filterBy === 'loss') {
-      filtered = filtered.filter(item => item.profitLoss < 0);
+      filtered = filtered.filter(stock => (stock.profitLoss || 0) < 0);
     }
 
-    return filtered;
-  }, [processedData, state.searchTerm, state.filterBy]);
-
-  // Apply sorting
-  const sortedData = useMemo(() => {
-    return [...filteredData].sort((a, b) => {
-      let aVal, bVal;
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
       
       switch (state.sortBy) {
         case 'symbol':
-          aVal = a.symbol;
-          bVal = b.symbol;
+          aValue = a.symbol;
+          bValue = b.symbol;
           break;
         case 'company':
-          aVal = a.companyName;
-          bVal = b.companyName;
+          aValue = a.companyName;
+          bValue = b.companyName;
           break;
         case 'quantity':
-          aVal = a.totalQuantity;
-          bVal = b.totalQuantity;
+          aValue = a.totalQuantity;
+          bValue = b.totalQuantity;
           break;
-        case 'avgPrice': // Renamed from unitPrice
-          aVal = a.averageUnitPrice;
-          bVal = b.averageUnitPrice;
+        case 'avgPrice':
+          aValue = a.averageUnitPrice;
+          bValue = b.averageUnitPrice;
           break;
         case 'invested':
-          aVal = a.netInvestment;
-          bVal = b.netInvestment;
+          aValue = a.netInvestment;
+          bValue = b.netInvestment;
           break;
-        case 'marketValue': // Renamed from currentValue
-          aVal = a.currentValue;
-          bVal = b.currentValue;
+        case 'marketValue':
+          aValue = a.currentValue;
+          bValue = b.currentValue;
           break;
         case 'profitLoss':
-          aVal = a.profitLoss;
-          bVal = b.profitLoss;
+          aValue = a.profitLoss;
+          bValue = b.profitLoss;
           break;
         case 'profitLossPercent':
-          aVal = returnType === 'absolute' ? a.profitLossPercent : a.xirrPercent;
-          bVal = returnType === 'absolute' ? b.profitLossPercent : b.xirrPercent;
+          aValue = returnType === 'absolute' ? a.profitLossPercent : a.xirrPercent;
+          bValue = returnType === 'absolute' ? b.profitLossPercent : b.xirrPercent;
           break;
         default:
-          aVal = a.currentValue;
-          bVal = b.currentValue;
+          aValue = a.currentValue;
+          bValue = b.currentValue;
       }
 
-      if (typeof aVal === 'string') {
-        return state.sortDirection === 'asc' 
-          ? aVal.localeCompare(bVal) 
-          : bVal.localeCompare(aVal);
+      if (typeof aValue === 'string') {
+        return state.sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       }
       
-      return state.sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      return state.sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
     });
-  }, [filteredData, state.sortBy, state.sortDirection, returnType]);
 
-  // Calculate totals
-  const totals = useMemo(() => {
-    if (!processedData || processedData.length === 0) {
-      return {
-        totalInvested: 0,
-        totalCurrentValue: 0,
-        totalProfitLoss: 0,
-        absoluteReturn: 0,
-        xirrReturn: 0
-      };
-    }
-    
-    const totalInvested = processedData.reduce((acc, stock) => acc + stock.netInvestment, 0);
-    const totalCurrentValue = processedData.reduce((acc, stock) => acc + stock.currentValue, 0);
-    const totalProfitLoss = processedData.reduce((acc, stock) => acc + stock.profitLoss, 0);
-    const absoluteReturn = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
-    const xirrReturn = calculateXIRR(filteredTransactions, totalCurrentValue) * 100;
-    
-    return {
-      totalInvested,
-      totalCurrentValue,
-      totalProfitLoss,
-      absoluteReturn,
-      xirrReturn
-    };
-  }, [processedData, filteredTransactions]);
+    return filtered;
+  }, [processedData.stocksArray, state.searchTerm, state.filterBy, state.sortBy, state.sortDirection, returnType]);
 
-  // Get selected stock's transactions
+  // Get selected stock data
   const selectedStockData = useMemo(() => {
-    if (!selectedStock) return null;
-    return processedData.find(stock => stock.symbol === selectedStock);
-  }, [selectedStock, processedData]);
-
-  // Notify parent of total market value
-  useEffect(() => {
-    if (onTotalMarketValueChange && totals.totalCurrentValue !== prevTotalMarketValue.current) {
-      onTotalMarketValueChange(totals.totalCurrentValue);
-      prevTotalMarketValue.current = totals.totalCurrentValue;
+    if (!selectedStock || !processedData.stockGroups[selectedStock]) {
+      return null;
     }
-  }, [totals.totalCurrentValue, onTotalMarketValueChange]);
+    return processedData.stockGroups[selectedStock];
+  }, [selectedStock, processedData.stockGroups]);
 
   // Utility functions
   const formatCurrency = (amount) => {
@@ -506,18 +208,17 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
   };
 
   const exportToCSV = () => {
-    const headers = ['Symbol', 'Company', 'Quantity', 'Avg Price', 'Net Investment', 'Market Value', 'Profit/Loss', 'P/L %'];
+    const headers = ['Symbol', 'Company Name', 'Quantity', 'Net Investment', 'Market Value', 'Profit/Loss', 'P/L %'];
     const csvContent = [
       headers.join(','),
-      ...sortedData.map(row => [
-        `"${row.symbol}"`,
+      ...filteredAndSortedData.map(row => [
+        row.symbol,
         `"${row.companyName}"`,
-        row.totalQuantity.toFixed(4),
-        row.averageUnitPrice.toFixed(2),
-        row.netInvestment.toFixed(2),
-        row.currentValue.toFixed(2),
-        row.profitLoss.toFixed(2),
-        (returnType === 'absolute' ? row.profitLossPercent : row.xirrPercent).toFixed(2)
+        (row.totalQuantity || 0).toFixed(4),
+        (row.netInvestment || 0).toFixed(2),
+        (row.currentValue || 0).toFixed(2),
+        (row.profitLoss || 0).toFixed(2),
+        (returnType === 'absolute' ? row.profitLossPercent : row.xirrPercent || 0).toFixed(2)
       ].join(','))
     ].join('\n');
 
@@ -529,6 +230,17 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
     a.click();
     window.URL.revokeObjectURL(url);
   };
+
+  const { totals } = processedData;
+
+  // Filter transactions - only STK (stocks), no CASH
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(txn => {
+      const assetClass = txn.AssetClass;
+      const symbol = txn.Symbol;
+      return assetClass === 'STK' && symbol && symbol.length > 0;
+    });
+  }, [transactions]);
 
   if (!transactions || transactions.length === 0) {
     return (
@@ -567,15 +279,28 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white p-4">
       <div className="max-w-8xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-            USD Stocks Portfolio Dashboard
-          </h1>
-          <p className="text-gray-400">Track your USD equity investments and performance</p>
+          <div className="flex items-start justify-between">
+            {/* Left side - Title and description */}
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
+                USD Stocks Portfolio
+              </h1>
+              <p className="text-gray-400">Track your USD equity investments and performance</p>
+            </div>
+            
+            {/* Right side - Export Button */}
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm flex-shrink-0"
+            >
+              <Download size={16} />
+              Export
+            </button>
+          </div>
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Improved responsive layout */}
         <div className="flex flex-col lg:flex-row gap-6 mb-8 lg:flex-nowrap">
           {/* Total Invested Card */}
           <PortfolioCard         
@@ -589,7 +314,7 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
           />
 
           {/* Current Value Card */}
-          <PortfolioCard         
+          <PortfolioCard
             title="Market Value"
             value={formatCurrency(totals.totalCurrentValue)}
             icon={LineChart}
@@ -599,7 +324,7 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
             titleColor="text-purple-100"
           />
 
-          {/* Profit/Loss Card with Toggle */}
+          {/* Total Profit/Loss Card */}
           <PortfolioCard
             title="Total P&L"
             value={formatCurrency(totals.totalProfitLoss)}
@@ -607,7 +332,7 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
             isProfit={totals.totalProfitLoss >= 0}
           />
 
-          {/* Returns Card with Toggle */}
+          {/* Enhanced Returns Card with Improved Toggle */}
           <ReturnsCard
             returnType={returnType}
             setReturnType={setReturnType}
@@ -617,62 +342,146 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
         </div>
         
         {/* Compact Filter Controls */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          
-          {/* Search */}
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search stocks or companies..."
-              value={state.searchTerm}
-              onChange={(e) => dispatch({ type: ACTIONS.SET_SEARCH, payload: e.target.value })}
-              className="w-full pl-9 pr-3 py-2 bg-slate-900/60 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
-            />
+        <div className="bg-gradient-to-r from-slate-900/40 to-slate-800/40 backdrop-blur-xl rounded-2xl p-5 mb-8 border border-slate-700/50 shadow-xl">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+            
+            {/* Search Section */}
+            <div className="flex-1 min-w-0">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search by symbol or company name..."
+                  value={state.searchTerm}
+                  onChange={(e) => dispatch({ type: ACTIONS.SET_SEARCH, payload: e.target.value })}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 text-sm backdrop-blur-sm"
+                />
+                {state.searchTerm && (
+                  <button
+                    onClick={() => dispatch({ type: ACTIONS.SET_SEARCH, payload: '' })}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white p-1 hover:bg-slate-700 rounded-full transition-all duration-200"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Section */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {/* Filter Label
+              <div className="text-sm font-medium text-slate-300 whitespace-nowrap">
+                Filter by Performance
+              </div> */}
+              
+              {/* Filter Buttons */}
+              <div className="flex bg-slate-800/60 backdrop-blur-sm rounded-xl p-1.5 border border-slate-600/30 shadow-inner">
+                <button
+                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
+                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    state.filterBy === 'all'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 transform scale-105'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${
+                    state.filterBy === 'all' ? 'bg-white/80' : 'bg-slate-500'
+                  }`}></div>
+                  All Stocks
+                  {state.filterBy === 'all' && (
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-blue-600/20 animate-pulse"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'profit' })}
+                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    state.filterBy === 'profit'
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 transform scale-105'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <TrendingUp size={14} className={state.filterBy === 'profit' ? 'text-white' : 'text-emerald-400'} />
+                  Profitable
+                  {state.filterBy === 'profit' && (
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/20 to-green-600/20 animate-pulse"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'loss' })}
+                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                    state.filterBy === 'loss'
+                      ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/25 transform scale-105'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <TrendingDown size={14} className={state.filterBy === 'loss' ? 'text-white' : 'text-red-400'} />
+                  Loss Making
+                  {state.filterBy === 'loss' && (
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-red-500/20 to-rose-600/20 animate-pulse"></div>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Results Counter */}
+            <div className="text-sm text-slate-400 bg-slate-800/30 px-3 py-2 rounded-lg border border-slate-600/30">
+              <span className="font-medium text-slate-300">{filteredAndSortedData.length}</span> 
+              <span className="ml-1">
+                {filteredAndSortedData.length === 1 ? 'stock' : 'stocks'}
+              </span>
+            </div>
+
           </div>
 
-          {/* Stock Filter Buttons */}
-          <div className="flex bg-slate-900/60 rounded-lg p-1 border border-gray-600">
-            <button
-              onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                state.filterBy === 'all'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'profit' })}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                state.filterBy === 'profit'
-                  ? 'bg-green-600 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              Profit
-            </button>
-            <button
-              onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'loss' })}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                state.filterBy === 'loss'
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              Loss
-            </button>
-          </div>
-
-          {/* Export Button */}
-          <button
-            onClick={exportToCSV}
-            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
-          >
-            <Download size={16} />
-            Export
-          </button>
+          {/* Active Filters Indicator */}
+          {(state.searchTerm || state.filterBy !== 'all') && (
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700/30">
+              <span className="text-xs text-slate-400 font-medium">Active filters:</span>
+              <div className="flex flex-wrap gap-2">
+                {state.searchTerm && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs font-medium border border-blue-500/30">
+                    <Search size={12} />
+                    "{state.searchTerm}"
+                    <button
+                      onClick={() => dispatch({ type: ACTIONS.SET_SEARCH, payload: '' })}
+                      className="ml-1 hover:bg-blue-500/30 rounded-full p-0.5 transition-colors"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                )}
+                {state.filterBy !== 'all' && (
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                    state.filterBy === 'profit' 
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      : 'bg-red-500/20 text-red-300 border-red-500/30'
+                  }`}>
+                    {state.filterBy === 'profit' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {state.filterBy === 'profit' ? 'Profitable only' : 'Loss making only'}
+                    <button
+                      onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
+                      className="ml-1 hover:bg-white/10 rounded-full p-0.5 transition-colors"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                )}
+              </div>
+              
+              {/* Clear All Filters */}
+              <button
+                onClick={() => {
+                  dispatch({ type: ACTIONS.SET_SEARCH, payload: '' });
+                  dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' });
+                }}
+                className="text-xs text-slate-400 hover:text-white underline underline-offset-2 transition-colors ml-auto"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Loading State */}
@@ -680,141 +489,140 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
           <LoadingScreen />
         )}
 
-        {/* Portfolio Table with Updated Column Names */}
-        {!state.loading && sortedData.length > 0 && (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8">
+        {/* Portfolio Table */}
+        {!state.loading && filteredAndSortedData.length > 0 && (
+          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-2">
             <div className="max-w-7xl mx-auto">              
               <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full">
+                  <table className="w-full table-fixed">
+                    <colgroup>
+                      <col className="w-2/5" /> {/* Company - 40% */}
+                      <col className="w-1/8" />  {/* Quantity - 12.5% */}
+                      <col className="w-1/6" />  {/* Net Invested - 16.67% */}
+                      <col className="w-1/6" />  {/* Market Value - 16.67% */}
+                      <col className="w-1/6" />  {/* Profit/Loss - 16.67% */}
+                    </colgroup>
                     <thead>
                       <tr className="border-b border-slate-700/70 bg-slate-900/80">
                         <th
                           className="group px-6 py-5 text-left text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
                           onClick={() => handleSort('company')}
                         >
-                          <span className="inline-flex items-center">
-                            Company
-                            <SortIcon
-                              columnKey="company"
-                              currentSort={state.sortBy}
-                              direction={state.sortDirection}
-                            />
-                          </span>
+                          <div className="flex items-center justify-start gap-2">
+                            <span>Company</span>
+                            <SortIcon columnKey="company" />
+                          </div>
                         </th>
                         <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
+                          className="group px-6 py-5 text-center text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
                           onClick={() => handleSort('quantity')}
                         >
-                          <span className="inline-flex items-center justify-end w-full">
-                            Quantity
-                            <SortIcon
-                              columnKey="quantity"
-                              currentSort={state.sortBy}
-                              direction={state.sortDirection}
-                            />
-                          </span>
+                          <div className="flex items-center justify-center gap-2">
+                            <span>Quantity</span>
+                            <SortIcon columnKey="quantity" />
+                          </div>
                         </th>
                         <th
                           className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
                           onClick={() => handleSort('invested')}
                         >
-                          <span className="inline-flex items-center justify-end w-full">
-                            Net Invested
-                            <SortIcon
-                              columnKey="invested"
-                              currentSort={state.sortBy}
-                              direction={state.sortDirection}
-                            />
-                          </span>
+                          <div className="flex items-center justify-end gap-2">
+                            <span>Net Invested</span>
+                            <SortIcon columnKey="invested" />
+                          </div>
                         </th>
                         <th
                           className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
                           onClick={() => handleSort('marketValue')}
                         >
-                          <span className="inline-flex items-center justify-end w-full">
-                            Market Value
-                            <SortIcon
-                              columnKey="marketValue"
-                              currentSort={state.sortBy}
-                              direction={state.sortDirection}
-                            />
-                          </span>
+                          <div className="flex items-center justify-end gap-2">
+                            <span>Market Value</span>
+                            <SortIcon columnKey="marketValue" />
+                          </div>
                         </th>
                         <th
                           className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
                           onClick={() => handleSort('profitLoss')}
                         >
-                          <span className="inline-flex items-center justify-end w-full">
-                            Profit / Loss
-                            <SortIcon
-                              columnKey="profitLoss"
-                              currentSort={state.sortBy}
-                              direction={state.sortDirection}
-                            />
-                          </span>
+                          <div className="flex items-center justify-end gap-2">
+                            <span>Profit / Loss</span>
+                            <SortIcon columnKey="profitLoss" />
+                          </div>
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedData.map((stock, index) => (
+                      {filteredAndSortedData.map((stock, index) => (
                         <tr 
-                          key={stock.symbol} 
-                          className="border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                          key={index} 
+                          className="border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer"
+                          onClick={() => handleRowClick(stock.symbol)}
                         >
                           <td className="px-6 py-5">
-                            <div className="font-semibold text-white text-base">
-                              {stock.companyName}
-                            </div>
-                            <div className="mt-2">
-                              <SymbolBadge symbol={stock.symbol} />
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="text-slate-200 font-semibold text-base">
-                              {Number(stock.totalQuantity).toFixed(2)}
+                            <div className="flex flex-col space-y-1">
+                              <div className="text-slate-200 font-semibold text-base truncate pr-2">
+                                {stock.companyName}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <SymbolBadge symbol={stock.symbol} />
+                              </div>
                             </div>
                           </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="text-slate-200 font-semibold text-base">
-                              {formatCurrency(stock.netInvestment)}
-                            </div>
-                            <div className="text-xs text-slate-500 mt-1 font-medium">
-                              {formatPrice(stock.averageUnitPrice)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="text-slate-200 font-semibold text-base">
-                              {formatCurrency(stock.currentValue)}
-                            </div>
-                            <div className="text-xs text-slate-500 mt-1 font-medium">
-                              {formatPrice(stock.currentPrice)}
+                          <td className="px-6 py-5">
+                            <div className="text-center">
+                              <div className="text-slate-200 font-semibold text-base">
+                                {Number(stock.totalQuantity || 0).toFixed(2)}
+                              </div>
+                              <div className="text-xs text-slate-500 mt-1">shares</div>
                             </div>
                           </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="flex items-center justify-end space-x-2">
-                              <span className={`font-bold text-base ${
-                                stock.profitLoss >= 0 ? "text-emerald-400" : "text-red-400"
+                          <td className="px-6 py-5">
+                            <div className="text-right">
+                              <div className="text-slate-200 font-semibold text-base">
+                                {formatCurrency(stock.netInvestment)}
+                              </div>
+                              <div className="text-xs text-slate-500 mt-1">
+                                {formatPrice(stock.averageUnitPrice)} avg
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="text-right">
+                              <div className="text-slate-200 font-semibold text-base">
+                                {formatCurrency(stock.currentValue)}
+                              </div>
+                              <div className="text-xs text-slate-500 mt-1">
+                                {formatPrice(stock.currentPrice)} price
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="text-right">
+                              <div className="flex items-center justify-end gap-2 mb-1">
+                                <span className={`font-bold text-base ${
+                                  (stock.profitLoss || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                                }`}>
+                                  {formatCurrency(stock.profitLoss)}
+                                </span>
+                                {(stock.profitLoss || 0) > 0 ? (
+                                  <TrendingUp className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                ) : (stock.profitLoss || 0) < 0 ? (
+                                  <TrendingDown className="w-4 h-4 text-red-400 flex-shrink-0" />
+                                ) : null}
+                              </div>
+                              <div className={`text-xs font-semibold ${
+                                (stock.profitLoss || 0) > 0
+                                  ? 'text-emerald-400'
+                                  : (stock.profitLoss || 0) < 0
+                                  ? 'text-red-400'
+                                  : 'text-slate-400'
                               }`}>
-                                {formatCurrency(stock.profitLoss)}
-                              </span>
-                              {stock.profitLoss > 0 ? (
-                                <TrendingUp className="w-5 h-5 text-emerald-400 hover:scale-110 transition-transform duration-200" />
-                              ) : stock.profitLoss < 0 ? (
-                                <TrendingDown className="w-5 h-5 text-red-400 hover:scale-110 transition-transform duration-200" />
-                              ) : null}
-                            </div>
-                            <div className={`text-xs mt-1 font-semibold ${
-                              stock.profitLoss > 0
-                                ? 'text-emerald-400'
-                                : stock.profitLoss < 0
-                                ? 'text-red-400'
-                                : 'text-slate-400'
-                            }`}>
-                              {(returnType === "absolute"
-                                ? stock.profitLossPercent
-                                : stock.xirrPercent
-                              ).toFixed(2)}%
+                                {((returnType === "absolute"
+                                  ? stock.profitLossPercent
+                                  : stock.xirrPercent) || 0
+                                ).toFixed(2)}%
+                              </div>
                             </div>
                           </td>
                         </tr>
@@ -822,20 +630,28 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                     </tbody>
                     <tfoot>
                       <tr className="border-t-2 border-blue-500/30 bg-gradient-to-r from-slate-900 to-slate-800">
-                        <td className="px-6 py-5 text-left text-white font-bold text-lg">
-                          Total Portfolio
+                        <td className="px-6 py-5">
+                          <div className="text-left text-white font-bold text-lg">
+                            Total Portfolio
+                          </div>
                         </td>
-                        <td className="px-6 py-5 text-right"></td>
-                        <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
-                          {formatCurrency(totals.totalInvested)}
+                        <td className="px-6 py-5"></td>
+                        <td className="px-6 py-5">
+                          <div className="text-right text-slate-200 font-bold text-lg">
+                            {formatCurrency(totals.totalInvested)}
+                          </div>
                         </td>
-                        <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
-                          {formatCurrency(totals.totalCurrentValue)}
+                        <td className="px-6 py-5">
+                          <div className="text-right text-slate-200 font-bold text-lg">
+                            {formatCurrency(totals.totalCurrentValue)}
+                          </div>
                         </td>
-                        <td className={`px-6 py-5 text-right font-bold text-lg ${
-                          totals.totalProfitLoss >= 0 ? "text-emerald-400" : "text-red-400"
-                        }`}>
-                          {formatCurrency(totals.totalProfitLoss)}
+                        <td className="px-6 py-5">
+                          <div className={`text-right font-bold text-lg ${
+                            totals.totalProfitLoss >= 0 ? "text-emerald-400" : "text-red-400"
+                          }`}>
+                            {formatCurrency(totals.totalProfitLoss)}
+                          </div>
                         </td>
                       </tr>
                     </tfoot>
@@ -847,14 +663,14 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
         )}
 
         {/* No Results */}
-        {!state.loading && sortedData.length === 0 && processedData.length > 0 && (
+        {!state.loading && filteredAndSortedData.length === 0 && processedData.stocksArray.length > 0 && (
           <div className="text-center py-12">
             <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">No stocks match your current filters</p>
           </div>
         )}
 
-        {/* Individual Transactions Section */}
+        {/* Individual Stock Transactions Section */}
         <div className="mt-8 bg-gray-800 rounded-2xl p-6 border border-gray-700">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -874,9 +690,9 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                 className="flex-1 lg:min-w-80 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Choose a stock to view transactions...</option>
-                {processedData.map((stock) => (
-                  <option key={stock.symbol} value={stock.symbol}>
-                    {stock.symbol} - {stock.companyName}
+                {filteredAndSortedData.map((stock, index) => (
+                  <option key={index} value={stock.symbol}>
+                    {stock.symbol} - {stock.companyName.length > 40 ? stock.companyName.substring(0, 40) + '...' : stock.companyName}
                   </option>
                 ))}
               </select>
@@ -888,21 +704,21 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
               {/* Stock Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 
-                {/* Symbol & Company */}
+                {/* Stock Symbol & Badge */}
                 <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
                   <h4 className="text-gray-400 text-sm font-medium mb-1">Stock Details</h4>
+                  <p className="text-white text-xl font-bold" title={selectedStockData.companyName}>
+                    {selectedStockData.companyName.length > 25 ? selectedStockData.companyName.substring(0, 25) + '...' : selectedStockData.companyName}
+                  </p>
                   <div className="mb-2">
                     <SymbolBadge symbol={selectedStockData.symbol} />
                   </div>
-                  <p className="text-gray-300 text-sm truncate" title={selectedStockData.companyName}>
-                    {selectedStockData.companyName}
-                  </p>
                 </div>
 
                 {/* Holdings */}
                 <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
                   <h4 className="text-gray-400 text-sm font-medium mb-1">Holdings</h4>
-                  <p className="text-white text-xl font-bold">{selectedStockData.totalQuantity.toFixed(4)} shares</p>
+                  <p className="text-white text-xl font-bold">{(selectedStockData.totalQuantity || 0).toFixed(4)} shares</p>
                   <p className="text-gray-300 text-sm">Avg: {formatPrice(selectedStockData.averageUnitPrice)}</p>
                 </div>
 
@@ -917,19 +733,19 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
 
                 {/* P&L Combined */}
                 <div className={`p-4 rounded-xl border ${
-                  selectedStockData.profitLoss >= 0 
+                  (selectedStockData.profitLoss || 0) >= 0 
                     ? 'bg-green-900/30 border-green-600/50' 
                     : 'bg-red-900/30 border-red-600/50'
                 }`}>
                   <h4 className="text-gray-400 text-sm font-medium mb-1">Profit & Loss</h4>
                   <div className="flex flex-col">
                     <p className={`text-lg font-bold ${
-                      selectedStockData.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'
+                      (selectedStockData.profitLoss || 0) >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {formatCurrency(selectedStockData.profitLoss)}
                     </p>
                     <p className={`text-sm font-semibold ${
-                      selectedStockData.profitLoss >= 0 ? 'text-green-300' : 'text-red-300'
+                      (selectedStockData.profitLoss || 0) >= 0 ? 'text-green-300' : 'text-red-300'
                     }`}>
                       {formatPercent(
                         returnType === 'absolute' 
@@ -947,7 +763,7 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                     Transaction History
                     <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                      {selectedStockData.rows.length}
+                      {selectedStockData.rows ? selectedStockData.rows.length : 0}
                     </span>
                   </h3>
                   
@@ -962,12 +778,12 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                   >
                     {showTransactions ? (
                       <>
-                        <TrendingDown size={16} />
+                        <Menu size={16} />
                         Hide Transactions
                       </>
                     ) : (
                       <>
-                        <TrendingUp size={16} />
+                        <Menu size={16} />
                         Show Transactions
                       </>
                     )}
@@ -975,17 +791,18 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                 </div>
 
                 {/* Transactions Table */}
-                {showTransactions && (
+                {showTransactions && selectedStockData.rows && selectedStockData.rows.length > 0 && (
                   <div className="p-4">
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
                           <tr className="border-b border-gray-600">
                             <th className="text-left py-3 px-4 text-gray-300 font-semibold">Date</th>
+                            <th className="text-left py-3 px-4 text-gray-300 font-semibold">Symbol</th>
                             <th className="text-right py-3 px-4 text-gray-300 font-semibold">Quantity</th>
                             <th className="text-right py-3 px-4 text-gray-300 font-semibold">Trade Price</th>
                             <th className="text-right py-3 px-4 text-gray-300 font-semibold">Trade Money</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">IB Commission</th>
+                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Commission</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -993,6 +810,9 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                             <tr key={index} className="border-b border-gray-700 hover:bg-gray-600/30">
                               <td className="py-3 px-4 text-gray-200">
                                 {new Date(transaction.DateTime?.replace(';', ' ') || '').toLocaleDateString() || 'N/A'}
+                              </td>
+                              <td className="py-3 px-4 text-gray-200">
+                                {transaction.Symbol || 'N/A'}
                               </td>
                               <td className="py-3 px-4 text-right text-white font-medium">
                                 <span className={`${parseFloat(transaction.Quantity || 0) < 0 ? 'text-red-400' : 'text-green-400'}`}>
@@ -1005,7 +825,7 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                               <td className="py-3 px-4 text-right text-white font-bold">
                                 {formatCurrency(parseFloat(transaction.TradeMoney || 0))}
                               </td>
-                              <td className="py-3 px-4 text-right text-red-300 font-medium">
+                              <td className="py-3 px-4 text-right text-white font-medium">
                                 {formatCurrency(parseFloat(transaction.IBCommission || 0))}
                               </td>
                             </tr>
@@ -1018,8 +838,9 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                             <td className="py-3 px-4 text-white font-bold">
                               Total for {selectedStockData.symbol}
                             </td>
+                            <td className="py-3 px-4"></td>
                             <td className="py-3 px-4 text-right text-white font-bold">
-                              {selectedStockData.totalQuantity.toFixed(4)}
+                              {(selectedStockData.totalQuantity || 0).toFixed(4)}
                             </td>
                             <td className="py-3 px-4 text-right text-white font-bold">
                               {formatPrice(selectedStockData.averageUnitPrice)}
@@ -1027,7 +848,7 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                             <td className="py-3 px-4 text-right text-white font-bold">
                               {formatCurrency(selectedStockData.totalAmount)}
                             </td>
-                            <td className="py-3 px-4 text-right text-red-300 font-bold">
+                            <td className="py-3 px-4 text-right text-white font-bold">
                               {formatCurrency(selectedStockData.totalIbCommission)}
                             </td>
                           </tr>
@@ -1036,13 +857,23 @@ const UsdStocksDashboard = ({ transactions = [], onTotalMarketValueChange }) => 
                     </div>
                   </div>
                 )}
+
+                {/* No Transactions Message */}
+                {showTransactions && (!selectedStockData.rows || selectedStockData.rows.length === 0) && (
+                  <div className="p-4 text-center py-8">
+                    <div className="bg-gray-600/50 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <List size={24} className="text-gray-400" />
+                    </div>
+                    <p className="text-gray-400">No transaction history available for this stock</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
             /* Empty State */
             <div className="text-center py-12">
               <div className="bg-gray-700/50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Building2 size={32} className="text-gray-400" />
+                <ChartNoAxesCombined size={32} className="text-gray-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-300 mb-2">No Stock Selected</h3>
               <p className="text-gray-400">
