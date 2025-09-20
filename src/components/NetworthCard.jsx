@@ -1,255 +1,297 @@
 import React from 'react';
 import { IndianRupee, DollarSign, Euro, TrendingUp } from 'lucide-react';
 import GoalProgress from './GoalProgress';
-import { ResponsiveContainer, AreaChart, Area, XAxis, CartesianGrid } from "recharts";
-
 
 const NetWorthCard = ({
   netWorth,
-  netWorthCurrency,
-  setNetWorthCurrency,
-  rupeeInvestments,
-  usdInvestments,
-  euroInvestments,
-  usdInrRate,
-  euroInrRate,
-  getGoalAmountInCurrency,
+  totalInvested = 5436866, // New prop for total invested amount
+  totalGainsLoss = 672137, // Changed from totalCurrentValue to totalGainsLoss
+  netWorthCurrency = 'INR',
+  setNetWorthCurrency = () => {},
+  rupeeInvestments = 4486866,
+  usdInvestments = 10133,
+  euroInvestments = 7000,
+  usdInrRate = 83.25,
+  euroInrRate = 90.50,
+  getGoalAmountInCurrency = () => 10000000,
 }) => {
-
-  const chartData = [
-  { label: "Jan", value: 200 },
-  { label: "Feb", value: 450 },
-  { label: "Mar", value: 300 },
-  { label: "Apr", value: 900 },
-  { label: "May", value: 350 },
-  { label: "Jun", value: 800 },
-  { label: "Jul", value: 300 },
-  { label: "Aug", value: 700 },
-  { label: "Sep", value: 1000},
-  { label: "Oct", value: 1500},
-  { label: "Nov", value: 1800},
-  { label: "Dec", value: 2500},
-];
   
   const goalInCurrency = getGoalAmountInCurrency();
-
-  // Calculate progress (0 to 1)
   let progress = 0;
   if (goalInCurrency > 0) {
     progress = Math.min(1, netWorth / goalInCurrency);
   }
 
-  let symbolForYourCurrency = '₹'; // default
-
+  let symbolForYourCurrency = '₹';
   if (netWorthCurrency === 'INR') symbolForYourCurrency = '₹';
   else if (netWorthCurrency === 'USD') symbolForYourCurrency = '$';
   else if (netWorthCurrency === 'EUR') symbolForYourCurrency = '€';
 
+  const getCurrencyColors = (currency) => {
+    switch(currency) {
+      case 'INR':
+        return {
+          primary: '#f97316',
+          secondary: '#ea580c',
+          gradient: 'from-orange-500 to-amber-600',
+          glow: 'rgba(249, 115, 22, 0.3)',
+          chartColor: '#FB923C'
+        };
+      case 'USD':
+        return {
+          primary: '#10b981',
+          secondary: '#059669',
+          gradient: 'from-emerald-500 to-teal-600',
+          glow: 'rgba(16, 185, 129, 0.3)',
+          chartColor: '#10B981'
+        };
+      case 'EUR':
+        return {
+          primary: '#3b82f6',
+          secondary: '#2563eb',
+          gradient: 'from-blue-500 to-indigo-600',
+          glow: 'rgba(59, 130, 246, 0.3)',
+          chartColor: '#3B82F6'
+        };
+      default:
+        return {
+          primary: '#f97316',
+          secondary: '#ea580c',
+          gradient: 'from-orange-500 to-amber-600',
+          glow: 'rgba(249, 115, 22, 0.3)',
+          chartColor: '#FB923C'
+        };
+    }
+  };
+
+  const colors = getCurrencyColors(netWorthCurrency);
+  const isGain = totalGainsLoss >= 0;
+  const gainsLossColor = isGain ? '#10b981' : '#ef4444'; // Green for gains, red for losses
+  const gainsLossTextColor = isGain ? 'text-emerald-300' : 'text-red-300';
+
+  const convertAmount = (amount, fromCurrency = 'INR', toCurrency = netWorthCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    
+    // Convert to INR first if needed
+    let inrAmount = amount;
+    if (fromCurrency === 'USD') {
+      inrAmount = amount * usdInrRate;
+    } else if (fromCurrency === 'EUR') {
+      inrAmount = amount * euroInrRate;
+    }
+    
+    // Convert from INR to target currency
+    if (toCurrency === 'USD') {
+      return inrAmount / usdInrRate;
+    } else if (toCurrency === 'EUR') {
+      return inrAmount / euroInrRate;
+    }
+    
+    return inrAmount;
+  };
+
+  // Convert the amounts based on current currency
+  const convertedTotalInvested = convertAmount(totalInvested, 'INR', netWorthCurrency);
+  const convertedTotalGainsLoss = convertAmount(totalGainsLoss, 'INR', netWorthCurrency);
+
   return (
     <div className="flex flex-col md:flex-row gap-6 mb-6">
       {/* Net Worth Card - Left Half */}
-      <div className="flex-1 bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden relative">
-        {/* Refined gradient header */}
-        <div className={`relative p-6 transition-all duration-700 ${
-          netWorthCurrency === 'INR'
-            ? 'bg-gradient-to-br from-slate-700 via-slate-600 to-orange-800/20'
-            : netWorthCurrency === 'USD'
-              ? 'bg-gradient-to-br from-slate-700 via-slate-600 to-emerald-800/20'
-              : 'bg-gradient-to-br from-slate-700 via-slate-600 to-blue-800/20'
-        }`}>
-          
-          {/* Subtle animated overlay */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="w-full h-full bg-gradient-to-r from-transparent via-white to-transparent transform -skew-x-12 animate-pulse"></div>
-          </div>
-
-          <div className="relative z-10">
-            <span className="text-slate-300 text-sm font-medium">
-              Total Net Worth
-            </span>
+          <div className="flex-1">
+          <div 
+            className="relative overflow-hidden rounded-3xl text-white transition-all duration-500 hover:scale-[1.01] group"
+            style={{
+              background: 'linear-gradient(135deg, #1e293b 0%, #334155 30%, #475569 60%, #334155 100%)',
+              boxShadow: `
+                inset 0 2px 0 rgba(255, 255, 255, 0.1),
+                0 20px 40px -10px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05)
+              `
+            }}
+          >
             
-            <div className="flex items-start justify-between mt-3">
-              {/* Amount display */}
-              <div className="flex-1">
-                <div className="flex items-baseline mb-4">
-                  <span className={`text-2xl font-semibold mr-2 transition-colors duration-500 ${
-                    netWorthCurrency === 'INR'
-                      ? 'text-orange-300'
-                      : netWorthCurrency === 'USD'
-                        ? 'text-emerald-300'
-                        : 'text-blue-300'
-                  }`}>
-                    {netWorthCurrency === 'INR' ? '₹' : netWorthCurrency === 'USD' ? '$' : '€'}
-                  </span>
-                  <span className="text-5xl font-bold bg-gradient-to-r from-white via-slate-100 to-white bg-clip-text text-transparent">
-                    {netWorth.toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
-                  </span>
-                </div>
+            {/* Dynamic gradient strip */}
+            <div 
+              className="absolute left-0 top-0 h-2 w-full opacity-90 transition-all duration-700"
+              style={{ 
+                background: `linear-gradient(90deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+                filter: 'brightness(1.2) saturate(1.1)'
+              }} 
+            />
+            
+            {/* Multi-layer glassmorphism background */}
+            <div
+              className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity duration-500"
+              style={{
+                background: `
+                  radial-gradient(circle at 20% 20%, ${colors.glow} 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.2) 0%, transparent 50%),
+                  radial-gradient(circle at 50% 10%, rgba(56, 189, 248, 0.15) 0%, transparent 60%)
+                `
+              }}
+            />
+
+            {/* Animated shimmer overlay */}
+            <div
+              className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 30%, transparent 70%, rgba(255,255,255,0.1) 100%)',
+                backgroundSize: '200% 200%',
+                animation: 'shimmer 3s ease-in-out infinite'
+              }}
+            />
+            
+            {/* Header Section */}
+            <div className="relative z-10 p-8 pb-4">
+              <div className="flex items-start justify-between">
                 
-                {/* Badge row with trend and exchange rate */}
-                <div className="flex items-center space-x-3">
-                  {/* Trend indicator badge */}
-                  <div className={`inline-flex items-center px-4 py-2 rounded-full transition-all duration-500 ${
-                    netWorthCurrency === 'INR'
-                      ? 'bg-orange-500/10 border border-orange-500/20'
-                      : netWorthCurrency === 'USD'
-                        ? 'bg-emerald-500/10 border border-emerald-500/20'
-                        : 'bg-blue-500/10 border border-blue-500/20'
-                  }`}>
-                    <TrendingUp className={`w-4 h-4 mr-2 transition-colors duration-500 ${
-                      netWorthCurrency === 'INR'
-                        ? 'text-orange-300'
-                        : netWorthCurrency === 'USD'
-                          ? 'text-emerald-300'
-                          : 'text-blue-300'
-                    }`} />
-                    <span className="text-white text-sm font-semibold">+12.5%</span>
-                    <span className="text-slate-400 text-xs ml-2">this month</span>
+                {/* Left: Title, Amount and Metrics */}
+                <div className="flex-1">
+                  {/* Title */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium text-slate-300">
+                      Total Net Worth
+                    </h3>
                   </div>
 
-                  {/* Exchange rate badge - only shown for non-INR currencies */}
-                  {netWorthCurrency !== 'INR' && (
-                    <div className={`inline-flex items-center px-4 py-2 rounded-full transition-all duration-500 ${
-                        netWorthCurrency === 'INR'
-                          ? 'bg-orange-500/10 border border-orange-500/20'
-                          : netWorthCurrency === 'USD'
-                            ? 'bg-emerald-500/10 border border-emerald-500/20'
-                            : 'bg-blue-500/10 border border-blue-500/20'
-                      }`}>
-                      <span className="text-slate-300 text-xs font-medium">
-                        1 {netWorthCurrency} = ₹{netWorthCurrency === 'USD' ? usdInrRate.toFixed(2) : euroInrRate.toFixed(2)}
+                  {/* Main Amount with Performance Badge */}
+                  <div className="text-center mb-8">
+                    <div className="flex items-baseline justify-center mb-3">
+                      <span 
+                        className="text-2xl font-bold mr-2"
+                        style={{ color: colors.primary }}
+                      >
+                        {symbolForYourCurrency}
+                      </span>
+                      <span 
+                        className="text-5xl sm:text-6xl font-black tracking-tight"
+                        style={{
+                          background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                          textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                        }}
+                      >
+                        {netWorth.toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
                       </span>
                     </div>
-                  )}
-                </div>
-              </div>
+                    
+                    {/* Performance badge directly below amount */}
+                    <div className="flex justify-center">
+                      <div
+                        className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium backdrop-blur-sm border transition-all duration-300"
+                        style={{
+                          background: `linear-gradient(135deg, ${colors.glow} 0%, ${colors.glow} 100%)`,
+                          borderColor: `${colors.primary}50`,
+                          color: colors.primary,
+                          boxShadow: `0 3px 8px ${colors.glow}`
+                        }}
+                      >
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        +12.5% this month
+                      </div>
 
-              {/* Round Currency Switcher with subtle pulse */}
-              <div className="flex flex-col items-center ml-6">
-                <button
-                  onClick={() => setNetWorthCurrency(prev =>
-                    prev === 'INR' ? 'USD' : prev === 'USD' ? 'EUR' : 'INR'
-                  )}
-                  className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 transform hover:scale-110 cursor-pointer group ${
-                    netWorthCurrency === 'INR'
-                      ? 'bg-gradient-to-br from-orange-400 to-orange-500 shadow-orange-500/25'
-                      : netWorthCurrency === 'USD'
-                        ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/25'
-                        : 'bg-gradient-to-br from-blue-400 to-blue-500 shadow-blue-500/25'
-                  } shadow-lg hover:shadow-xl`}
-                  title={`Switch to ${netWorthCurrency === 'INR' ? 'USD' : netWorthCurrency === 'USD' ? 'EUR' : 'INR'}`}
-                >
-                  {/* Subtle pulsing ring animation */}
-                  <div className={`absolute -inset-1 rounded-full animate-pulse opacity-10 ${
-                    netWorthCurrency === 'INR'
-                      ? 'bg-orange-400'
-                      : netWorthCurrency === 'USD'
-                        ? 'bg-emerald-400'
-                        : 'bg-blue-400'
-                  }`}></div>
-                  
-                  {/* Static ring for depth */}
-                  <div className={`absolute inset-0 rounded-full ring-2 ${
-                    netWorthCurrency === 'INR'
-                      ? 'ring-orange-300/30'
-                      : netWorthCurrency === 'USD'
-                        ? 'ring-emerald-300/30'
-                        : 'ring-blue-300/30'
-                  }`}></div>
-                  
-                  {/* Currency icon */}
-                  <div className="relative z-10">
-                    {netWorthCurrency === 'INR' && <IndianRupee className="w-7 h-7 text-white drop-shadow-sm" />}
-                    {netWorthCurrency === 'USD' && <DollarSign className="w-7 h-7 text-white drop-shadow-sm" />}
-                    {netWorthCurrency === 'EUR' && <Euro className="w-7 h-7 text-white drop-shadow-sm" />}
+                      {/* Exchange Rate Badge - Bottom */}
+                      {netWorthCurrency !== 'INR' && (
+                        <div className="flex justify-center ml-2">
+                          <div
+                            className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium backdrop-blur-sm border"
+                            style={{
+                              background: `linear-gradient(135deg, ${colors.glow} 0%, ${colors.glow} 100%)`,
+                              borderColor: `${colors.primary}50`,
+                              color: colors.primary,
+                              boxShadow: `0 3px 8px ${colors.glow}`
+                            }}
+                          >
+                            <span className="text-sm">
+                              1 {netWorthCurrency} = ₹{netWorthCurrency === 'USD' ? usdInrRate.toFixed(2) : euroInrRate.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </button>
-                
-                {/* Tap to switch label */}
-                <span className={`text-xs font-medium mt-2 animate-pulse transition-colors duration-500 text-center ${
-                  netWorthCurrency === 'INR'
-                    ? 'text-orange-300'
-                    : netWorthCurrency === 'USD'
-                      ? 'text-emerald-300'
-                      : 'text-blue-300'
-                }`}>
-                  Tap to switch
-                </span>
+                  {/* Invested vs Gains/Loss - Side by Side */}
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Total Invested */}
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 mr-2"></div>
+                        <span className="text-xs text-slate-400 font-medium">INVESTED</span>
+                      </div>
+                      <div className="text-blue-300 font-bold text-xl">
+                        {symbolForYourCurrency}{Math.round(convertedTotalInvested).toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
+                    
+                    {/* Gains/Loss */}
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <div 
+                          className="w-2 h-2 rounded-full mr-2"
+                          style={{ 
+                            background: isGain 
+                              ? 'linear-gradient(to right, #10b981, #059669)' 
+                              : 'linear-gradient(to right, #ef4444, #dc2626)' 
+                          }}
+                        ></div>
+                        <span className="text-xs text-slate-400 font-medium">
+                          {isGain ? 'GAINS' : 'LOSS'}
+                        </span>
+                      </div>
+                      <div className={`font-bold text-xl ${gainsLossTextColor}`}>
+                         {isGain ? '+' : '-'} {symbolForYourCurrency}{Math.abs(Math.round(convertedTotalGainsLoss)).toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Premium Currency Switcher */}
+                <div className="flex flex-col items-center ml-8">
+                  <div className="relative">
+                    {/* Glow effect */}
+                    <div
+                      className="absolute inset-0 rounded-full opacity-60 blur-2xl scale-110 group-hover:opacity-80 transition-opacity duration-300"
+                      style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})` }}
+                    />
+                    
+                    {/* Switch Button */}
+                    <button
+                      onClick={() => setNetWorthCurrency(prev =>
+                        prev === 'INR' ? 'USD' : prev === 'USD' ? 'EUR' : 'INR'
+                      )}
+                      className="relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 hover:scale-110 cursor-pointer group border border-white/20 backdrop-blur-sm"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                        boxShadow: `inset 0 2px 0 rgba(255, 255, 255, 0.2), 0 6px 16px ${colors.glow}`
+                      }}
+                    >
+                      {/* Currency Icon */}
+                      <div className="relative z-10">
+                        {netWorthCurrency === 'INR' && <IndianRupee className="w-6 h-6 text-white drop-shadow-sm" />}
+                        {netWorthCurrency === 'USD' && <DollarSign className="w-6 h-6 text-white drop-shadow-sm" />}
+                        {netWorthCurrency === 'EUR' && <Euro className="w-6 h-6 text-white drop-shadow-sm" />}
+                      </div>
+                      
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </button>
+                  </div>
+                  
+                  {/* Switch Label */}
+                  <span 
+                    className="text-xs font-medium mt-2 text-center"
+                    style={{ color: colors.primary }}
+                  >
+                    Switch
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* Enhanced chart section */}
-        <div className="p-6 bg-gradient-to-b from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
-          <div style={{ width: '100%', height: 130 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={chartData}
-                margin={{ top: 15, right: 0, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id={`chartGradient-${netWorthCurrency}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor={
-                      netWorthCurrency === 'INR' ? '#FB923C' 
-                      : netWorthCurrency === 'USD' ? '#10B981' 
-                      : '#3B82F6'
-                    } stopOpacity={0.4} />
-                    <stop offset="50%" stopColor={
-                      netWorthCurrency === 'INR' ? '#FB923C' 
-                      : netWorthCurrency === 'USD' ? '#10B981' 
-                      : '#3B82F6'
-                    } stopOpacity={0.1} />
-                    <stop offset="100%" stopColor={
-                      netWorthCurrency === 'INR' ? '#FB923C' 
-                      : netWorthCurrency === 'USD' ? '#10B981' 
-                      : '#3B82F6'
-                    } stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid 
-                  vertical={false} 
-                  stroke="#374151" 
-                  strokeDasharray="2 4" 
-                  strokeOpacity={0.3}
-                />
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#94A3B8", fontSize: 11 }}
-                  dy={10}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={
-                    netWorthCurrency === 'INR' ? '#FB923C' 
-                    : netWorthCurrency === 'USD' ? '#10B981' 
-                    : '#3B82F6'
-                  }
-                  strokeWidth={3}
-                  fill={`url(#chartGradient-${netWorthCurrency})`}
-                  dot={false}
-                  activeDot={{ 
-                    r: 6, 
-                    fill: netWorthCurrency === 'INR' ? '#FB923C' 
-                        : netWorthCurrency === 'USD' ? '#10B981' 
-                        : '#3B82F6',
-                    strokeWidth: 2,
-                    stroke: 'white',
-                    strokeOpacity: 0.8,
-                    fillOpacity: 1
-                  }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
 
       {/* Goal Circle - Right Half */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -268,6 +310,12 @@ const NetWorthCard = ({
           <div>Loading currency rates...</div>
         )}
       </div>
+      <style jsx>{`
+        @keyframes shimmer {
+          0%, 100% { background-position: 0% 0%; }
+          50% { background-position: 100% 100%; }
+        }
+      `}</style>
     </div>
   );
 };

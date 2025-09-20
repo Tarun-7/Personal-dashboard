@@ -1,25 +1,8 @@
 import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-/**
- * InvestmentCard
- *
- * Props
- * - title: string
- * - amount: number
- * - className?: string
- * - currencySymbol?: string         // default "₹"
- * - delta?: string                  // e.g., "+8.2% this month"
- * - deltaPositive?: boolean         // true => green, false => red
- * - showTopStrip?: boolean          // gradient strip at top
- * - fxNote?: string                 // "1 USD = ₹83.25"
- * - lastUpdated?: string            // "2 hours ago"
- * - badgeGradient?: [string,string] // ["#3b82f6", "#2563eb"]
- * - icons?: React.ReactNode         // content inside badge
- * - onClick?: () => void
- */
-
-export default function InvestmentCard({
+// Premium InvestmentCard matching the vibrant design from other pages
+function InvestmentCard({
   title = "INR Investments",
   amount = 0,
   className = "",
@@ -34,136 +17,177 @@ export default function InvestmentCard({
   onClick,
 }) {
   
-  const amountFmt = new Intl.NumberFormat(amountLocale).format(amount);
   const [badgeFrom, badgeTo] = badgeGradient;
-  
-  const formatAmountWithSmallDecimal = (amount) => {
-    const [integerPart, decimalPart] = amount.toString().split('.');
-    return (
-      <>
-        {integerPart}
-        {decimalPart && (
-          <span className="text-[16px] sm:text-[18px] font-extrabold">
-            .{decimalPart}
-          </span>
-        )}
-      </>
-    );
-  };
 
+  const formatAmount = (amount) => {
+    if (!amount || isNaN(amount)) return '0';
+    
+    const numAmount = parseFloat(amount);
+    
+    if (amountLocale === "en-IN") {
+      // Indian formatting with lakhs and crores
+      if (numAmount >= 10000000) { // 1 crore or more
+        const crores = numAmount / 10000000;
+        return `${crores.toFixed(2)} crores`;
+      } else if (numAmount >= 100000) { // 1 lakh or more
+        const lakhs = numAmount / 100000;
+        return `${lakhs.toFixed(2)} L`;
+      } else if (numAmount >= 1000) {
+        // Use Indian comma formatting for thousands
+        return numAmount.toLocaleString('en-IN');
+      } else {
+        return numAmount.toFixed(2);
+      }
+    } else {
+      // International formatting (USD, EUR, etc.) with K notation
+      if (numAmount >= 1000000) { // 1 million or more
+        const millions = numAmount / 1000000;
+        return `${millions.toFixed(2)}M`;
+      } else if (numAmount >= 1000) { // 1 thousand or more
+        const thousands = numAmount / 1000;
+        return `${thousands.toFixed(2)} K`;
+      } else {
+        return numAmount.toFixed(2);
+      }
+    }
+  };
 
   return (
     <div
       onClick={onClick}
-      className={[
-        "relative overflow-hidden rounded-2xl bg-[#1A2330] text-white",
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
-        "p-5 sm:p-6 transition-all duration-200",
-        "hover:translate-y-[-1px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_10px_24px_-12px_rgba(0,0,0,0.45)]",
-        className,
-      ].join(" ")}
+      className={`relative overflow-hidden rounded-2xl text-white p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl cursor-pointer group ${className}`}
+      style={{
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%)',
+        boxShadow: `
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          0 10px 25px -5px rgba(0, 0, 0, 0.3),
+          0 0 0 1px rgba(255, 255, 255, 0.05)
+        `
+      }}
       role="region"
       aria-label={`${title} card`}
     >
       {showTopStrip && (
-        <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-teal-300 via-blue-400 to-violet-400" />
+        <div 
+          className="absolute left-0 top-0 h-1 w-full opacity-90"
+          style={{ 
+            background: 'linear-gradient(90deg, #14f195 0%, #60a5fa 50%, #a855f7 100%)',
+            filter: 'brightness(1.2)'
+          }} 
+        />
       )}
 
-      {/* Sheen */}
+      {/* Multi-layer glassmorphism effect */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.10]"
+        className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity duration-300"
         style={{
-          background:
-            "radial-gradient(120% 60% at 0% 0%, rgba(255,255,255,.25) 0%, rgba(255,255,255,0) 60%), linear-gradient(135deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 45%)",
+          background: `
+            radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(20, 241, 149, 0.2) 0%, transparent 50%)
+          `
         }}
       />
 
-      {/* Header: left stack (fills) + right badge (fixed) */}
-      <div className="relative z-[1] flex items-start justify-between gap-4">
+      {/* Animated shimmer overlay */}
+      <div
+        className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 30%, transparent 70%, rgba(255,255,255,0.1) 100%)',
+          backgroundSize: '200% 200%',
+          animation: 'shimmer 3s ease-in-out infinite'
+        }}
+      />
+
+      {/* Header */}
+      <div className="relative z-10 flex items-start justify-between gap-4 mb-6">
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col gap-3">
-
-            {/* Title (wrap if needed) */}
-            <h3 className="text-[13px] text-[#A8B3CF] leading-tight break-words">
-              {title}
-            </h3>
-
-          </div>
+          <h3 className="text-sm font-medium" style={{ color: '#cbd5e1' }}>
+            {title}
+          </h3>
         </div>
 
-        {/* Badge (fixed size, doesn’t shrink) */}
+        {/* Glowing badge */}
         <div className="relative shrink-0">
+          {/* Glow effect */}
           <div
-            className="absolute inset-0 -m-1 rounded-full opacity-40"
-            style={{ filter: "blur(14px)", background: `${badgeFrom}66` }}
-          />
-          <div
-            className="relative h-12 w-12 rounded-2xl border border-white/10 flex items-center justify-center"
+            className="absolute inset-0 rounded-2xl opacity-60 blur-xl scale-110 group-hover:opacity-80 transition-opacity duration-300"
             style={{ background: `linear-gradient(135deg, ${badgeFrom}, ${badgeTo})` }}
-            aria-hidden="true"
+          />
+          {/* Badge */}
+          <div
+            className="relative h-14 w-14 rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm"
+            style={{ 
+              background: `linear-gradient(135deg, ${badgeFrom}, ${badgeTo})`,
+              boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px ${badgeFrom}40`
+            }}
           >
-            {icons ?? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M6 4h12v2H6v2h10v2H10.8c1.3 1 2.2 2.6 2.2 4.4V19h-2v-4.6C11 12 9.7 10.7 8 10.6H6V8H4V6h2z"
-                  fill="#fff"
-                />
-              </svg>
-            )}
+            {icons}
           </div>
         </div>
       </div>
 
-      {/* Footer meta — separate lines, aligned */}
-        <div className="relative z-[1] mt-5 mb-2 space-y-1.5 text-[12px] leading-5 text-[#A8B3CF]">
-
-            {/* Amount row — full width */}
-            <div className="w-full">
-              <div className="text-white text-[28px] sm:text-[30px] font-extrabold tracking-tight leading-none">
-                {currencySymbol} {formatAmountWithSmallDecimal(amountFmt)}
-              </div>
-            </div>
-            
-            {/* Delta chip row — full width */}
-            {typeof delta === "string" && delta.length > 0 && (
-              <div className="w-full">
-                <div
-                  className={[
-                    "inline-flex items-center rounded-xl mt-4 px-3 py-1.5 text-[13px] border",
-                    deltaPositive
-                      ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
-                      : "text-rose-400 border-rose-500/30 bg-rose-500/10",
-                  ].join(" ")}
-                  aria-label={`Change ${delta}`}
-                  title={delta}
-                >
-                  {deltaPositive ? (
-                    <TrendingUp className="h-4 w-4 mr-1.5" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4 mr-1.5" />
-                  )}
-                  {delta}
-                </div>
-              </div>
-            )}
-          
+      {/* Amount with gradient text */}
+      <div className="relative z-10 mb-6">
+        <div 
+          className="text-4xl font-bold tracking-tight"
+          style={{
+            background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+          }}
+        >
+          {currencySymbol} {formatAmount(amount, amountLocale)}
         </div>
-
-      {/* Right-bottom timestamp with refresh icon */}
-      {lastUpdated && (
-        <div className="absolute right-2 bottom-1 mt-8 flex items-center justify-end">
-          <div className="flex items-center gap-1 text-[12px] leading-5 text-[#A8B3CF]">
-            <svg
-              width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"
-              className="opacity-80"
-            >
-              <path fill="currentColor"
-                d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z" />
-            </svg>
-            <span>2 hours ago</span>
+      </div>
+      
+      {/* Glowing delta chip */}
+      {delta && (
+        <div className="relative z-10 mb-4">
+          <div
+            className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium backdrop-blur-sm border transition-all duration-300 ${
+              deltaPositive
+                ? "border-emerald-400/30 text-emerald-300"
+                : "border-red-400/30 text-red-300"
+            }`}
+            style={{
+              background: deltaPositive 
+                ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)'
+                : 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%)',
+              boxShadow: deltaPositive 
+                ? '0 4px 12px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                : '0 4px 12px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            {deltaPositive ? (
+              <TrendingUp className="h-4 w-4 mr-2" />
+            ) : (
+              <TrendingDown className="h-4 w-4 mr-2" />
+            )}
+            {delta}
           </div>
         </div>
       )}
+
+      {/* Timestamp with subtle glow */}
+      {lastUpdated && (
+        <div className="absolute right-3 bottom-3 flex items-center gap-2 text-xs opacity-70">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-60">
+            <path d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z" />
+          </svg>
+          <span style={{ color: '#94a3b8' }}>{lastUpdated}</span>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes shimmer {
+          0%, 100% { background-position: 0% 0%; }
+          50% { background-position: 100% 100%; }
+        }
+      `}</style>
     </div>
   );
 }
+export default InvestmentCard;
