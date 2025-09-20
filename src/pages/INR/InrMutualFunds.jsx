@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
 import { Eye, X, ChartNoAxesCombined, SortDesc, SortAsc, Search, TrendingUp, TrendingDown, Download, Filter, BarChart3, List, BarChart, HandCoins, PiggyBank, LineChart, ToggleLeft, ToggleRight, Percent } from 'lucide-react';
 import LoadingScreen from '../../components/LoadingScreen';
-import PortfolioCard from '../../components/PortfolioCard';
 import ReturnsCard from '../../components/ReturnsCard';
 import SummaryCard from '../../components/SummaryCard';
 
@@ -307,7 +306,7 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
         </div>
 
         {/* Summary Cards - Improved responsive layout */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-8 lg:flex-nowrap">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Invested Card */}
           <SummaryCard
             title="Net Investment"
@@ -347,13 +346,14 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
           />
 
           {/* Enhanced Returns Card with Improved Toggle */}
-          <ReturnsCard
-            returnType={returnType}
-            setReturnType={setReturnType}
-            totals={totals}
-            formatPercent={formatPercent}
-          />
-
+          <div className="h-full">
+            <ReturnsCard
+              returnType={returnType}
+              setReturnType={setReturnType}
+              totals={totals}
+              formatPercent={formatPercent}
+            />
+          </div>
         </div>
         
         {/* Compact Filter Controls */}

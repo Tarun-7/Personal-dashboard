@@ -73,6 +73,7 @@ const Dashboard = ({
           icons={<DollarSign className="h-6 w-6 text-white" />}
           badgeGradient={["#fbbf24", "#f59e0b"]}
           amountLocale="en-US"
+          onClick={() => setActiveTab('USD Investments')} // Sidebar path
         />
 
         <InvestmentCard

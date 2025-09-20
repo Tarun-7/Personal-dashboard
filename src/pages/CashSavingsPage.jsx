@@ -264,21 +264,6 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
             </div>
             
             <div className="flex items-center gap-4">
-              {/* Currency Switcher */}
-              <div className="flex items-center gap-2">
-                <label htmlFor="currency" className="text-sm text-gray-400">Currency:</label>
-                <select
-                  id="currency"
-                  value={selectedCurrency}
-                  onChange={e => setSelectedCurrency(e.target.value)}
-                  className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-                >
-                  <option value="INR">INR (₹)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                </select>
-              </div>
-
               <button
                 onClick={handleAddNew}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl"

@@ -9,7 +9,7 @@ import InrMutualFunds from './pages/INR/InrMutualFunds';
 import InrInvestmentsOverview from './pages/INR/InrOverviewPage';
 import CashSavingsPage from './pages/CashSavingsPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
-import UsdCryptoPage from './pages/USD/UsdCryptoPage';
+import CryptoInvestments from './pages/CryptoInvestmentsPage';
 import LoadingPage from './pages/LoadingPage';
 
 import DataLoadingService from './services/DataLoadingService';
@@ -436,8 +436,8 @@ useEffect(() => {
             />
           )}  
 
-          {activeTab === 'usd-crypto' && (
-            <UsdCryptoPage
+          {activeTab === 'Crypto Investments' && (
+            <CryptoInvestments
             />
           )}  
 

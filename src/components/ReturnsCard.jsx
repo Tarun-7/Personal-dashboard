@@ -6,16 +6,24 @@ const ReturnsCard = ({
   returnType,
   setReturnType,
   totals,
-  formatPercent
+  formatPercent,
+  className=''
 }) => {
   const isPositive = (returnType === 'absolute' ? totals.absoluteReturn : totals.xirrReturn) >= 0;
   
   return (
-    <div className={`${
-      isPositive
-        ? 'bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600'
-        : 'bg-gradient-to-br from-red-500 via-rose-500 to-red-600'
-    } p-5 md:p-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300 min-h-[160px] md:min-h-[180px] flex-grow min-w-[300px] border border-white/20 relative overflow-hidden group`}>
+    <div className={`
+      ${isPositive
+        ? 'bg-gradient-to-br from-orange-500 to-amber-600'
+        : 'bg-gradient-to-br from-gray-600 to-slate-700'
+      } 
+      p-6 rounded-2xl shadow-xl hover:shadow-2xl 
+      transform hover:scale-[1.02] transition-all duration-300 
+      min-h-[140px] flex flex-col justify-between
+      border border-white/20 backdrop-blur-sm
+      relative overflow-hidden group
+      ${className}
+    `}>
       
       {/* Subtle animated background pattern */}
       <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300">

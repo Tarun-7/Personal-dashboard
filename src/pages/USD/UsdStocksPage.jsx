@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useReducer } from 'react';
-import { X, Search, TrendingUp, TrendingDown, AlertCircle, Download, SortAsc, SortDesc, BarChart3, List, LineChart, Building2, PiggyBank, ChartNoAxesCombined, Filter, Menu } from 'lucide-react';
+import { X, Eye, Search, TrendingUp, TrendingDown, AlertCircle, Download, SortAsc, SortDesc, BarChart3, List, LineChart, Building2, PiggyBank, ChartNoAxesCombined, Filter, Menu } from 'lucide-react';
 import LoadingScreen from '../../components/LoadingScreen';
-import PortfolioCard from '../../components/PortfolioCard';
 import ReturnsCard from '../../components/ReturnsCard';
+import SummaryCard from '../../components/SummaryCard';
 
 // Symbol Badge Component
 const SymbolBadge = ({ symbol }) => {
@@ -279,9 +279,9 @@ const UsdStocksDashboard = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white p-4">
       <div className="max-w-8xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
-          <div className="flex items-start justify-between">
-            {/* Left side - Title and description */}
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
                 USD Stocks Portfolio
@@ -289,56 +289,81 @@ const UsdStocksDashboard = ({
               <p className="text-gray-400">Track your USD equity investments and performance</p>
             </div>
             
-            {/* Right side - Export Button */}
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm flex-shrink-0"
-            >
-              <Download size={16} />
-              Export
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={exportToCSV}
+                disabled={transactions.length === 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  transactions.length === 0
+                    ? 'bg-slate-600 text-slate-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl'
+                }`}
+                title="Export USD stocks data to CSV"
+              >
+                <Download size={20} />
+                Export
+              </button>
+
+              <button
+                // onClick={() => setShowBalance(!showBalance)}
+                className="p-3 bg-gray-800 rounded-xl hover:bg-gray-700 transition-colors"
+              >
+                {true ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Summary Cards - Improved responsive layout */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-8 lg:flex-nowrap">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          
           {/* Total Invested Card */}
-          <PortfolioCard         
+          <SummaryCard
             title="Net Investment"
             value={formatCurrency(totals.totalInvested)}
+            subtitle="Total invested amount"
             icon={PiggyBank}
-            gradientFrom="from-blue-500"
-            gradientTo="to-cyan-600"
-            iconColor="text-blue-100"
-            titleColor="text-blue-100"
+            statusIcon={PiggyBank}
+            gradient="from-blue-500 to-cyan-600"
+            textColor="text-blue-100"
+            pulseIcon={true}
           />
 
           {/* Current Value Card */}
-          <PortfolioCard
+          <SummaryCard
             title="Market Value"
             value={formatCurrency(totals.totalCurrentValue)}
             icon={LineChart}
-            gradientFrom="from-purple-500"
-            gradientTo="to-indigo-600"
-            iconColor="text-purple-100"
-            titleColor="text-purple-100"
+            subtitle="Total current value"
+            statusIcon={LineChart}
+            gradient="from-purple-500 to-indigo-600"
+            textColor="text-purple-100"
+            pulseIcon={true}
           />
 
           {/* Total Profit/Loss Card */}
-          <PortfolioCard
+          <SummaryCard
             title="Total P&L"
             value={formatCurrency(totals.totalProfitLoss)}
-            icon={null} // Will be determined by isProfit
-            isProfit={totals.totalProfitLoss >= 0}
+            icon={
+              totals.totalProfitLoss >= 0 ? TrendingUp : TrendingDown
+            }
+            subtitle="Total Profit / Loss"
+            statusIcon={
+              totals.totalProfitLoss >= 0 ? TrendingUp : TrendingDown
+            }
+            gradient={totals.totalProfitLoss >= 0 ? "from-emerald-500 to-green-600" : "from-red-500 to-rose-600"}
           />
 
           {/* Enhanced Returns Card with Improved Toggle */}
-          <ReturnsCard
-            returnType={returnType}
-            setReturnType={setReturnType}
-            totals={totals}
-            formatPercent={formatPercent}
-          />
+          <div className="h-full">  
+            <ReturnsCard
+              returnType={returnType}
+              setReturnType={setReturnType}
+              totals={totals}
+              formatPercent={formatPercent}
+            />
+          </div>
         </div>
         
         {/* Compact Filter Controls */}
