@@ -95,9 +95,9 @@ const NetWorthCard = ({
   const convertedTotalGainsLoss = convertAmount(totalGainsLoss, 'INR', netWorthCurrency);
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 mb-6">
+    <div className="flex flex-col lg:flex-row gap-6 p-6">
       {/* Net Worth Card - Left Half */}
-          <div className="flex-1">
+        <div className="flex-1">
           <div 
             className="relative overflow-hidden rounded-3xl text-white transition-all duration-500 hover:scale-[1.01] group"
             style={{
