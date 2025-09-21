@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "type": "Savings Account",
+        "bankName": "Axis Bank",
+        "accountName": "Primary Savings",
+        "amount": 100000,
+        "interestRate": 0,
+        "maturityDate": null,
+        "description": "Emergency fund and daily expenses",
+        "color": "#3B82F6",
+        "addedDate": "2023-09-01"
+    },
+    {
+        "id": 2,
+        "type": "Fixed Deposit",
+        "bankName": "Axis Bank",
+        "accountName": "FD - 1 Year",
+        "amount": 25000,
+        "interestRate": 6.6,
+        "maturityDate": "2027-03-03",
+        "description": "Emergency fund",
+        "color": "#10B981",
+        "addedDate": "2024-09-03"
+    }
+]
