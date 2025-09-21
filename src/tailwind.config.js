@@ -1,9 +1,20 @@
-module.exports = {
+export default {
   content: [
-    './src/**/*.{js,jsx,ts,tsx}',  // Adjust this to include your files with Tailwind classes
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        gray: {
+          750: '#374151',
+          850: '#1f2937', 
+          950: '#111827'
+        }
+      }
+    },
   },
   plugins: [],
 }
+

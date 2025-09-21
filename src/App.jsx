@@ -33,7 +33,6 @@ const Dashboard = () => {
 
   // Reviewed states
   const [activeTab, setActiveTab] = useState('Dashboard');
-  const [brokerType, setBrokerType] = useState('Kuvera');
   const [uploadedFiles, setUploadedFiles] = useState({
     kuvera: null,
     ibkr: null
@@ -331,8 +330,7 @@ useEffect(() => {
       updateLoadingState('mutualFunds', true);
       const result = await DataLoadingService.processKuveraFile(selectedFile);
       setKuveraTransactions(result.transactions);
-      setActiveTab("inr-mutual-funds");
-      setBrokerType("Kuvera");
+      setActiveTab("INR Investments");
     } catch (error) {
       console.error('Error processing Kuvera file:', error);
       updateLoadingState('mutualFunds', false);
@@ -347,8 +345,7 @@ useEffect(() => {
       updateLoadingState('usdStocks', true);
       const result = await DataLoadingService.processIbkrFile(selectedFile);
       setIbkrTransactions(result.transactions);
-      setActiveTab('usd-stocks');
-      setBrokerType("Interactive Broker");
+      setActiveTab('USD Investments');
     } catch (error) {
       console.error('Error processing IBKR file:', error);
       updateLoadingState('usdStocks', false);

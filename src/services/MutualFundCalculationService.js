@@ -45,7 +45,7 @@ class MutualFundCalculationService {
       const fundData = this.calculateFundMetrics(fundName, fundTransactions, currentNav);
       
       // Only include funds with non-zero units
-      if (fundData.totalUnits > 0) {
+      if (fundData.totalUnits > 0.001) {
         totalInvested += fundData.totalAmount;
         totalCurrentValue += fundData.currentValue;
         fundsData.push(fundData);
@@ -429,8 +429,6 @@ static calculateXIRR(input, currentValue = 0) {
   console.log(`calculateXIRR: Final rate after ${maxIterations} iterations: ${rate}`);
   return rate;
 }
-
-
 
   static formatCurrency(amount) {
     return new Intl.NumberFormat('en-IN', {
