@@ -522,11 +522,11 @@ const UsdStocksDashboard = ({
                 <div className="overflow-x-auto">
                   <table className="w-full table-fixed">
                     <colgroup>
-                      <col className="w-2/5" /> {/* Company - 40% */}
-                      <col className="w-1/8" />  {/* Quantity - 12.5% */}
-                      <col className="w-1/6" />  {/* Net Invested - 16.67% */}
-                      <col className="w-1/6" />  {/* Market Value - 16.67% */}
-                      <col className="w-1/6" />  {/* Profit/Loss - 16.67% */}
+                      <col className="w-2/5" />
+                      <col className="w-1/8" />
+                      <col className="w-1/6" />
+                      <col className="w-1/6" />
+                      <col className="w-1/6" />
                     </colgroup>
                     <thead>
                       <tr className="border-b border-slate-700/70 bg-slate-900/80">

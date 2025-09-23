@@ -1,7 +1,7 @@
 class SavingsCalculationService {
   static async calculateSavingsSummary() {
     try {
-      const response = await fetch('/data/inr-savings.json');
+      const response = await fetch(`${import.meta.env.BASE_URL}/data/inr-savings.json`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch savings data: ${response.status}`);

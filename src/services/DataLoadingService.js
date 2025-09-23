@@ -4,7 +4,7 @@ import InvestmentCalculationService from './InvestmentCalculationService';
 class DataLoadingService {
   static async loadKuveraData() {
     try {
-      const text = await FileProcessingService.loadInitialFile('/data/kuvera.csv');
+      const text = await FileProcessingService.loadInitialFile(`${import.meta.env.BASE_URL}/data/kuvera.csv`);
       const transactions = FileProcessingService.parseKuveraCSV(text);
       const totalValue = InvestmentCalculationService.calculateMutualFundTotal(transactions);
       
@@ -25,7 +25,7 @@ class DataLoadingService {
 
   static async loadIbkrData() {
     try {
-      const text = await FileProcessingService.loadInitialFile('/data/ibkr.csv');
+      const text = await FileProcessingService.loadInitialFile(`${import.meta.env.BASE_URL}/data/ibkr.csv`);
       const { rows } = FileProcessingService.parseCSV(text);
       const totalValue = InvestmentCalculationService.calculateTotalTradeValue(rows);
       

@@ -87,7 +87,7 @@ class MutualFundCalculationService {
   // Load fund codes from data folder
   static async loadFundCodes() {
     try {
-      const response = await fetch('/data/KuveraCode.json'); // Adjust path as needed
+      const response = await fetch(`${import.meta.env.BASE_URL}/data/KuveraCode.json`); // Adjust path as needed
       if (!response.ok) {
         throw new Error(`Failed to load fund codes: ${response.status}`);
       }
