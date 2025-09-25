@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Plus, IndianRupee, Euro, TrendingUp, TrendingDown, PieChart, BarChart3, Activity, Target, Calendar, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield, Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard, Download } from 'lucide-react';
+import { Percent, Plus, IndianRupee, Euro, TrendingUp, TrendingDown, PieChart, BarChart3, Activity, Target, Calendar, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield, Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard, Download } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Area, AreaChart } from 'recharts';
 import LoadingScreen from '../components/LoadingScreen';
 import SavingsCalculationService from '../services/SavingsCalculationService';
@@ -42,19 +42,19 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
     // Convert any currency to INR first
     let amountInINR = amount;
     if (fromCurrency === 'USD') {
-      amountInINR = amount * (usdInrRate || 83);
+      amountInINR = amount * (usdInrRate);
     } else if (fromCurrency === 'EUR') {
-      amountInINR = amount * (euroInrRate || 91);
+      amountInINR = amount * (euroInrRate);
     }
 
     // Then convert INR to selected currency
     if (selectedCurrency === 'USD') {
-      return amountInINR / (usdInrRate || 83);
+      return amountInINR / usdInrRate;
     } else if (selectedCurrency === 'EUR') {
-      return amountInINR / (euroInrRate || 91);
+      return amountInINR / euroInrRate;
     }
 
-    return amountInINR; // Return INR
+    return amountInINR;
   }, [selectedCurrency, usdInrRate, euroInrRate]);
 
   // Use pre-calculated analytics from props with currency conversion
@@ -75,7 +75,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
       allocation: savingsSummary.allocation || [],
       itemCount: savingsSummary.itemCount || 0
     };
-  }, [savingsSummary, selectedCurrency, convertAmount]);
+  }, [savingsSummary, selectedCurrency, usdInrRate, euroInrRate]);
 
   // Monthly growth data (mock) - keep same
   const monthlyData = [
@@ -300,7 +300,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <SummaryCard
             title="Total Cash Savings"
-            value={formatCurrency(analytics.totalAmount)}
+            value={formatCurrency(analytics.totalAmount, selectedCurrency)}
             subtitle="+2.1% this month"
             icon={Wallet}
             statusIcon={TrendingUp}
@@ -313,7 +313,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
             title="Avg Interest Rate"
             value={`${analytics.avgInterestRate.toFixed(1)}%`}
             subtitle="Across all accounts"
-            icon={Wallet}
+            icon={Percent}
             statusIcon={TrendingUp}
             gradient="from-green-600 to-green-700"
             textColor="green"
@@ -322,7 +322,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
 
           <SummaryCard
             title="Annual Interest"
-            value={formatCurrency(analytics.totalInterestEarning)}
+            value={formatCurrency(analytics.totalInterestEarning, selectedCurrency)}
             subtitle="Expected yearly"
             icon={DollarSign}
             statusIcon={ArrowUpRight}

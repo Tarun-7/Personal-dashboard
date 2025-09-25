@@ -423,6 +423,8 @@ useEffect(() => {
             <CashSavingsPage 
               savingsSummary={savingsSummary}
               onSavingsUpdate={handleSavingsUpdate}
+              usdInrRate={usdInrRate}
+              euroInrRate={euroInrRate}
             />
           )}
           
