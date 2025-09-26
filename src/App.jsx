@@ -20,11 +20,8 @@ import SavingsCalculationService from './services/SavingsCalculationService';
 import UsdStocksCalculationService from './services/UsdStocksCalculationService';
 
 import { 
-  Home, 
   BarChart3, 
   Settings, 
-  Search, 
-  Bell,
   Menu
 } from 'lucide-react';
 
@@ -40,8 +37,8 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rupeeInvestments, setRupeeInvestments] = useState(0);
   const [InrMfValue, setInrMfvalue] = useState(0);
-  const [InrSavingsValue, setInrSavingsValue] = useState(0);
-  const [mutualFundSummary, setMutualFundSummary] = useState({
+  const [cashAndSavings, setCashAndSavings] = useState(0);
+  const [inrMutualFundSummary, setInrMutualFundSummary] = useState({
     totalInvested: 0,
     totalCurrentValue: 0,
     totalProfitLoss: 0,
@@ -116,8 +113,8 @@ const Dashboard = () => {
 
   // Update rupee investments whenever mutual fund or savings values change
   useEffect(() => {
-    setRupeeInvestments(InrMfValue + InrSavingsValue);
-  }, [InrMfValue, InrSavingsValue]);
+    setRupeeInvestments(InrMfValue + cashAndSavings);
+  }, [InrMfValue, cashAndSavings]);
 
   // Load savings data on app initialization
   useEffect(() => {
@@ -126,7 +123,7 @@ const Dashboard = () => {
         updateLoadingState('savings', true);
         const summary = await SavingsCalculationService.calculateSavingsSummary();
         setSavingsSummary(summary);
-        setInrSavingsValue(summary.totalAmount); // Update the dashboard value
+        setCashAndSavings(summary.totalAmount); // Update the dashboard value
       } catch (error) {
         console.error('Error loading savings data:', error);
       } finally {
@@ -148,7 +145,7 @@ const Dashboard = () => {
   // Function to handle savings data updates from the savings page
   const handleSavingsUpdate = (updatedSummary) => {
     setSavingsSummary(updatedSummary);
-    setInrSavingsValue(updatedSummary.totalAmount);
+    setCashAndSavings(updatedSummary.totalAmount);
   };
 
   // Calculate mutual fund summary when Kuvera transactions change
@@ -158,7 +155,7 @@ const Dashboard = () => {
         try {
           updateLoadingState('mutualFunds', true);
           const summary = await MutualFundCalculationService.calculateMutualFundSummary(kuveraTransactions);
-          setMutualFundSummary(summary);
+          setInrMutualFundSummary(summary);
           setInrMfvalue(summary.totalCurrentValue);
         } catch (error) {
           console.error('Error calculating mutual fund summary:', error);
@@ -171,7 +168,7 @@ const Dashboard = () => {
             xirrReturn: 0,
             fundsData: []
           };
-          setMutualFundSummary(basicSummary);
+          setInrMutualFundSummary(basicSummary);
         } finally {
           updateLoadingState('mutualFunds', false);
         }
@@ -405,17 +402,10 @@ useEffect(() => {
             />
           )}
 
-          {/* {activeTab === 'INR Investments' && (
-            <InrInvestmentsOverview 
-              transactions={kuveraTransactions} 
-              onTotalMarketValue={setRupeeInvestments} 
-            />
-          )} */}
-
           {activeTab === 'INR Investments' && (
             <InrMutualFunds 
               transactions={kuveraTransactions} 
-              mutualFundSummary={mutualFundSummary}
+              mutualFundSummary={inrMutualFundSummary}
             />
           )}
 
