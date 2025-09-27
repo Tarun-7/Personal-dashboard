@@ -1,0 +1,197 @@
+Date, Folio Number, Name of the Fund, Order, Units, NAV, Current Nav, Amount (INR)
+    2025-08-28,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1025.762,24.3709,25.8527,24998.75
+    2025-08-28,6783138/22,Bandhan Small Cap Growth Direct Plan,buy,404.773,49.408,52.123,19999.0
+    2025-08-28,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,146.202,170.9875,175.8914,24998.75
+    2025-08-28,91035042645,Motilal Oswal Nifty Midcap 150 Index Growth Direct Plan,buy,795.258,37.7217,39.3769,29998.5
+    2025-08-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,40.549,184.9538,192.4025,7499.63
+    2025-08-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,169.075,44.3568,45.9072,7499.63
+    2025-08-11,477309850546,Nippon India Small Cap Growth Direct Plan,buy,40.401,185.6303,192.4025,7499.63
+    2025-08-11,8872690/88,Tata Small Cap Growth Direct Plan,buy,169.587,44.2229,45.9072,7499.63
+    2025-08-07,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,145.818,171.4379,175.8914,24998.75
+    2025-08-07,6783138/22,Bandhan Small Cap Growth Direct Plan,buy,600.631,49.945,52.123,29998.5
+    2025-08-07,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1020.753,24.4905,25.8527,24998.75
+    2025-08-07,91035042645,Motilal Oswal Midcap Growth Direct Plan,buy,256.098,117.1368,120.2923,29998.5
+    2025-08-04,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1012.046,24.7012,25.8527,24998.75
+    2025-08-04,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,145.087,172.3022,175.8914,24998.75
+    2025-08-04,91035042645,Motilal Oswal Midcap Growth Direct Plan,buy,338.862,118.0363,120.2923,39998.0
+    2025-08-04,6783138/22,Bandhan Small Cap Growth Direct Plan,buy,394.481,50.697,52.123,19999.0
+    2025-07-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,39.672,189.0386,192.4025,7499.63
+    2025-07-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,164.863,45.49,45.9072,7499.63
+    2025-07-09,477309850546,Nippon India Small Cap Growth Direct Plan,buy,38.577,194.4066,192.4025,7499.63
+    2025-07-09,8872690/88,Tata Small Cap Growth Direct Plan,buy,163.582,45.8464,45.9072,7499.63
+    2025-06-30,477309850546,Nippon India Small Cap Growth Direct Plan,buy,38.625,194.1643,192.4025,7499.63
+    2025-06-30,8872690/88,Tata Small Cap Growth Direct Plan,buy,164.413,45.6146,45.9072,7499.63
+    2025-06-09,477309850546,Nippon India Small Cap Growth Direct Plan,buy,39.335,190.6581,192.4025,7499.63
+    2025-06-09,8872690/88,Tata Small Cap Growth Direct Plan,buy,166.099,45.1517,45.9072,7499.63
+    2025-05-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,40.632,184.5749,192.4025,7499.63
+    2025-05-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,172.394,43.5029,45.9072,7499.63
+    2025-05-09,477309850546,Nippon India Small Cap Growth Direct Plan,buy,44.146,169.8835,192.4025,7499.63
+    2025-05-09,8872690/88,Tata Small Cap Growth Direct Plan,buy,187.927,39.9072,45.9072,7499.63
+    2025-04-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,43.001,174.4073,192.4025,7499.63
+    2025-04-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,182.477,41.099,45.9072,7499.63
+    2025-04-09,477309850546,Nippon India Small Cap Growth Direct Plan,buy,46.374,161.7193,192.4025,7499.63
+    2025-04-09,8872690/88,Tata Small Cap Growth Direct Plan,buy,194.691,38.5207,45.9072,7499.63
+    2025-03-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,44.766,167.5308,192.4025,7499.63
+    2025-03-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,184.889,40.5629,45.9072,7499.63
+    2025-03-10,477309850546,Nippon India Small Cap Growth Direct Plan,buy,46.633,160.8207,192.4025,7499.63
+    2025-03-10,8872690/88,Tata Small Cap Growth Direct Plan,buy,191.61,39.14,45.9072,7499.63
+    2025-02-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,48.125,155.8372,192.4025,7499.63
+    2025-02-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,199.378,37.6152,45.9072,7499.63
+    2025-02-28,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,952.483,20.9967,25.8527,19999.0
+    2025-02-28,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,130.476,153.2771,175.8914,19999.0
+    2025-02-24,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1137.32,21.9804,25.8527,24998.75
+    2025-02-24,91035042645,Motilal Oswal Midcap Growth Direct Plan,buy,143.482,104.5377,120.2923,14999.25
+    2025-02-24,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,95.996,156.2481,175.8914,14999.25
+    2025-02-10,477309850546,Nippon India Small Cap Growth Direct Plan,buy,43.296,173.2182,192.4025,7499.63
+    2025-02-10,8872690/88,Tata Small Cap Growth Direct Plan,buy,181.254,41.3763,45.9072,7499.63
+    2025-02-10,91035042645,Motilal Oswal Midcap Growth Direct Plan,buy,229.834,108.7687,120.2923,24998.75
+    2025-02-10,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,654.044,22.9331,25.8527,14999.25
+    2025-02-10,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,154.412,161.8963,175.8914,24998.75
+    2025-01-28,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,157.387,158.8365,175.8914,24998.75
+    2025-01-28,51011292082,Quant Mid Cap Growth Direct Plan,buy,109.177,228.974,236.6308,24998.75
+    2025-01-28,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1116.838,22.3835,25.8527,24998.75
+    2025-01-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,44.286,169.3445,192.4025,7499.63
+    2025-01-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,187.728,39.9495,45.9072,7499.63
+    2025-01-22,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1514.958,23.1018,25.8527,34998.25
+    2025-01-22,91035042645,Motilal Oswal Midcap Growth Direct Plan,buy,321.518,108.8533,120.2923,34998.25
+    2025-01-22,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,187.243,160.2112,175.8914,29998.5
+    2025-01-14,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1941.064,23.182,25.8527,44997.75
+    2025-01-14,91035042645,Motilal Oswal Midcap Growth Direct Plan,buy,216.068,115.6985,120.2923,24998.75
+    2025-01-14,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,156.034,160.213,175.8914,24998.75
+    2025-01-07,51011292082,Quant Mid Cap Growth Direct Plan,buy,203.136,246.128,236.6308,49997.5
+    2025-01-07,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,305.057,163.8956,175.8914,49997.5
+    2025-01-07,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,2032.435,24.5998,25.8527,49997.5
+    2024-12-30,477309850546,Nippon India Small Cap Growth Direct Plan,buy,38.753,193.5219,192.4025,7499.63
+    2024-12-30,8872690/88,Tata Small Cap Growth Direct Plan,buy,161.523,46.4308,45.9072,7499.63
+    2024-12-23,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,182.67,164.222,175.8914,29998.5
+    2024-12-23,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,791.021,25.2825,25.8527,19999.0
+    2024-11-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,38.438,195.1079,192.4025,7499.63
+    2024-11-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,158.734,47.2465,45.9072,7499.63
+    2024-11-14,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,307.245,162.7282,175.8914,49997.5
+    2024-10-08,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,86.837,172.7286,175.8914,14999.25
+    2024-08-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,37.514,199.9176,192.4025,7499.63
+    2024-08-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,159.686,46.9648,45.9072,7499.63
+    2024-08-28,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,288.921,173.0489,175.8914,49997.5
+    2024-08-27,51011292082,Quant Mid Cap Growth Direct Plan,buy,91.064,274.5194,236.6308,24998.75
+    2024-08-27,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1091.795,27.4763,25.8527,29998.5
+    2024-08-08,477309850546,Nippon India Small Cap Growth Direct Plan,buy,38.974,192.4261,192.4025,7499.63
+    2024-08-08,8872690/88,Tata Small Cap Growth Direct Plan,buy,167.697,44.7214,45.9072,7499.63
+    2024-07-29,477309850546,Nippon India Small Cap Growth Direct Plan,buy,37.652,199.1827,192.4025,7499.63
+    2024-07-29,51011292082,Quant Mid Cap Growth Direct Plan,buy,90.382,276.5895,236.6308,24998.75
+    2024-07-29,8872690/88,Tata Small Cap Growth Direct Plan,buy,165.28,45.3754,45.9072,7499.63
+    2024-07-29,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,292.029,171.2076,175.8914,49997.5
+    2024-07-29,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1101.17,27.2424,25.8527,29998.5
+    2024-07-08,477309850546,Nippon India Small Cap Growth Direct Plan,buy,38.322,195.7025,192.4025,7499.63
+    2024-07-08,8872690/88,Tata Small Cap Growth Direct Plan,buy,168.333,44.5523,45.9072,7499.63
+    2024-06-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,39.757,188.6347,192.4025,7499.63
+    2024-06-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,174.168,43.0598,45.9072,7499.63
+    2024-06-28,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,302.194,165.4484,175.8914,49997.5
+    2024-06-27,51011292082,Quant Mid Cap Growth Direct Plan,buy,92.662,269.7836,236.6308,24998.75
+    2024-06-27,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1147.104,26.1515,25.8527,29998.5
+    2024-06-10,477309850546,Nippon India Small Cap Growth Direct Plan,buy,41.66,180.0195,192.4025,7499.63
+    2024-06-10,8872690/88,Tata Small Cap Growth Direct Plan,buy,184.169,40.7215,45.9072,7499.63
+    2024-06-04,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,639.063,23.4707,25.8527,14999.25
+    2024-06-04,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,99.534,150.6944,175.8914,14999.25
+    2024-06-04,51011292082,Quant Mid Cap Growth Direct Plan,buy,60.946,246.1066,236.6308,14999.25
+    2024-05-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,42.942,174.6468,192.4025,7499.63
+    2024-05-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,189.221,39.6342,45.9072,7499.63
+    2024-05-28,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,317.8,157.3236,175.8914,49997.5
+    2024-05-27,51011292082,Quant Mid Cap Growth Direct Plan,buy,95.608,261.4705,236.6308,24998.75
+    2024-05-27,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1183.77,25.3415,25.8527,29998.5
+    2024-05-08,477309850546,Nippon India Small Cap Growth Direct Plan,buy,44.533,168.4069,192.4025,7499.63
+    2024-05-08,8872690/88,Tata Small Cap Growth Direct Plan,buy,192.6,38.9389,45.9072,7499.63
+    2024-04-29,477309850546,Nippon India Small Cap Growth Direct Plan,buy,43.973,170.5501,192.4025,7499.63
+    2024-04-29,51011292082,Quant Mid Cap Growth Direct Plan,buy,98.851,252.8921,236.6308,24998.75
+    2024-04-29,8872690/88,Tata Small Cap Growth Direct Plan,buy,190.495,39.3692,45.9072,7499.63
+    2024-04-29,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,321.982,155.2804,175.8914,49997.5
+    2024-04-29,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1269.38,23.6324,25.8527,29998.5
+    2024-03-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,47.864,156.6865,192.4025,7499.63
+    2024-03-28,8872690/88,Tata Small Cap Growth Direct Plan,buy,209.656,35.7711,45.9072,7499.63
+    2024-03-28,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,326.477,153.1425,175.8914,49997.5
+    2024-03-27,51011292082,Quant Mid Cap Growth Direct Plan,buy,108.082,231.2945,236.6308,24998.75
+    2024-03-27,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1366.425,21.954,25.8527,29998.5
+    2024-03-14,8872690/88,Tata Small Cap Growth Direct Plan,buy,219.672,34.1401,45.9072,7499.63
+    2024-03-14,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,329.093,151.9253,175.8914,49997.5
+    2024-03-14,51011292082,Quant Mid Cap Growth Direct Plan,buy,44.222,226.1193,236.6308,9999.5
+    2024-03-14,477309850546,Nippon India Small Cap Growth Direct Plan,buy,49.811,150.5607,192.4025,7499.63
+    2024-03-13,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1432.32,20.944,25.8527,29998.5
+    2024-03-05,51011292082,Quant Mid Cap Growth Direct Plan,buy,105.132,237.785,236.6308,24998.75
+    2024-02-28,477309850546,Nippon India Small Cap Growth Direct Plan,buy,95.103,157.7161,192.4025,14999.25
+    2024-02-27,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,328.293,152.2952,175.8914,49997.5
+    2024-02-27,51011292082,Quant Mid Cap Growth Direct Plan,buy,108.492,230.4211,236.6308,24998.75
+    2024-02-22,51011292082,Quant Mid Cap Growth Direct Plan,buy,107.52,232.5025,236.6308,24998.75
+    2024-02-22,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1387.669,21.6179,25.8527,29998.5
+    2024-02-22,8872690/88,Tata Small Cap Growth Direct Plan,buy,405.428,36.9961,45.9072,14999.25
+    2024-01-29,477309850546,Nippon India Small Cap Growth Direct Plan,buy,95.552,156.9752,192.4025,14999.25
+    2023-12-26,477309850546,Nippon India Small Cap Growth Direct Plan,buy,98.848,151.7412,192.4025,14999.25
+    2023-11-28,51011292082,Quant Mid Cap Growth Direct Plan,buy,131.487,190.1236,236.6308,24998.75
+    2023-11-28,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,256.783,136.295,175.8914,34998.25
+    2023-10-27,51011292082,Quant Mid Cap Growth Direct Plan,buy,142.209,175.7887,236.6308,24998.75
+    2023-10-25,91035042645,Motilal Oswal S&P 500 Index Growth Direct Plan,buy,1565.19,15.9717,27.0373,24998.75
+    2023-10-25,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,267.212,130.9755,175.8914,34998.25
+    2023-08-28,51011292082,Quant Mid Cap Growth Direct Plan,buy,145.692,171.586,236.6308,24998.75
+    2023-08-28,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,924.014,16.2327,25.8527,14999.25
+    2023-05-29,51011292082,Quant Mid Cap Growth Direct Plan,buy,169.813,147.2131,236.6308,24998.75
+    2023-05-29,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1370.42,15.323,25.8527,20998.95
+    2023-05-25,91035042645,Motilal Oswal S&P 500 Index Growth Direct Plan,buy,1604.675,15.5787,27.0373,24998.75
+    2023-05-25,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,280.471,124.7837,175.8914,34998.25
+    2023-04-27,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1052.608,14.2496,25.8527,14999.25
+    2023-04-26,91035042645,Motilal Oswal S&P 500 Index Growth Direct Plan,buy,1644.146,15.2047,27.0373,24998.75
+    2023-04-26,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,289.089,121.0639,175.8914,34998.25
+    2023-04-06,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1003.11,13.9559,25.8527,13999.3
+    2023-04-03,51011292082,Quant Multi Cap Growth Direct Plan,buy,22.72,440.1147,695.6568,9999.5
+    2023-03-29,51011292082,Quant Mid Cap Growth Direct Plan,buy,182.193,137.2099,236.6308,24998.75
+    2023-03-29,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1100.765,13.6262,25.8527,14999.25
+    2023-03-27,8872690/88,Tata Small Cap Growth Direct Plan,buy,602.263,24.9048,45.9072,14999.25
+    2023-03-27,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1098.685,13.652,25.8527,14999.25
+    2023-03-24,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,260.469,115.1713,175.8914,29998.5
+    2023-03-01,51011292082,Quant Multi Cap Growth Direct Plan,buy,22.601,442.4393,695.6568,9999.5
+    2023-02-27,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1104.405,13.5813,25.8527,14999.25
+    2023-02-24,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,252.652,118.7346,175.8914,29998.5
+    2023-02-01,51011292082,Quant Multi Cap Growth Direct Plan,buy,22.471,444.9937,695.6568,9999.5
+    2023-01-30,91035042645,Motilal Oswal S&P 500 Index Growth Direct Plan,buy,330.759,15.116,27.0373,4999.75
+    2023-01-25,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1007.357,14.8897,25.8527,14999.25
+    2023-01-24,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,243.707,123.0926,175.8914,29998.5
+    2023-01-03,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,195.204,51.2259,94.376,9999.5
+    2023-01-02,51011292082,Quant Multi Cap Growth Direct Plan,buy,20.38,490.6414,695.6568,9999.5
+    2022-12-26,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,984.39,15.2371,25.8527,14999.25
+    2022-12-23,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,123.979,120.9826,175.8914,14999.25
+    2022-12-01,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,188.669,53.0001,94.376,9999.5
+    2022-12-01,51011292082,Quant Multi Cap Growth Direct Plan,buy,20.092,497.6829,695.6568,9999.5
+    2022-12-01,910141927992,Axis Large Cap Growth Direct Plan,sell,493.116,50.4,70.92,24807.3
+    2022-11-25,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,958.412,15.6501,25.8527,14999.25
+    2022-11-01,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,192.354,51.9849,94.376,9999.5
+    2022-11-01,51011292082,Quant Multi Cap Growth Direct Plan,buy,21.029,475.5081,695.6568,9999.5
+    2022-10-25,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,125.132,119.8674,175.8914,14999.25
+    2022-10-25,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,979.927,15.3065,25.8527,14999.25
+    2022-10-03,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,201.265,49.6832,94.376,9999.5
+    2022-10-03,51011292082,Quant Multi Cap Growth Direct Plan,buy,22.209,450.2538,695.6568,9999.5
+    2022-09-26,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,971.744,15.4354,25.8527,14999.25
+    2022-09-23,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,127.518,117.6246,175.8914,14999.25
+    2022-09-22,9105171102,Navi US Total Stock Market FoF Growth Direct Plan,buy,1066.921,9.3723,18.2993,9999.5
+    2022-09-01,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,195.567,51.1309,94.376,9999.5
+    2022-09-01,51011292082,Quant Multi Cap Growth Direct Plan,buy,21.937,455.8343,695.6568,9999.5
+    2022-08-23,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,125.682,119.3424,175.8914,14999.25
+    2022-08-01,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,197.401,50.6558,94.376,9999.5
+    2022-08-01,51011292082,Quant Multi Cap Growth Direct Plan,buy,22.798,438.6097,695.6568,9999.5
+    2022-07-25,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,133.096,112.6946,175.8914,14999.25
+    2022-07-25,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1024.539,14.64,25.8527,14999.25
+    2022-07-01,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,213.631,46.8073,94.376,9999.5
+    2022-07-01,51011292082,Quant Multi Cap Growth Direct Plan,buy,25.506,392.0496,695.6568,9999.5
+    2022-06-23,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1138.454,13.1751,25.8527,14999.25
+    2022-06-23,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,142.491,105.2644,175.8914,14999.25
+    2022-06-08,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1092.173,13.7334,25.8527,14999.25
+    2022-06-02,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,202.927,49.2763,94.376,9999.5
+    2022-06-02,51011292082,Quant Multi Cap Growth Direct Plan,buy,23.792,420.282,695.6568,9999.5
+    2022-05-26,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1089.943,13.7615,25.8527,14999.25
+    2022-05-19,577346469087,UTI Nifty 50 Index Growth Direct Plan,buy,93.857,106.5399,175.8914,9999.5
+    2022-05-04,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,201.407,49.6482,94.376,9999.5
+    2022-05-04,51011292082,Quant Multi Cap Growth Direct Plan,buy,23.169,431.5864,695.6568,9999.5
+    2022-04-26,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,956.542,15.6807,25.8527,14999.25
+    2022-04-04,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,185.247,53.9793,94.376,9999.5
+    2022-03-29,51011292082,Quant Multi Cap Growth Direct Plan,buy,22.651,441.4508,695.6568,9999.5
+    2022-03-02,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,200.447,49.8861,94.376,9999.5
+    2022-02-23,577346469087,UTI Nifty Next 50 Index Growth Direct Plan,buy,1021.42,14.6847,25.8527,14999.25
+    2022-02-21,910141927992,Axis Large Cap Growth Direct Plan,buy,303.444,49.43,70.92,14999.25
+    2022-01-31,12283250,Parag Parikh Flexi Cap Growth Direct Plan,buy,190.478,52.4968,94.376,9999.5
+    2022-01-04,910141927992,Axis Large Cap Growth Direct Plan,buy,189.672,52.72,70.92,9999.5
