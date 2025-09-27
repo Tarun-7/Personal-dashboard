@@ -38,8 +38,8 @@ jobs:
         env:
           NODE_ENV: production
           VITE_PASSWORD_HASH: ${{ secrets.VITE_PASSWORD_HASH }}
-          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
-          VITE_APP_NAME: ${{ secrets.VITE_APP_NAME }}
+          VITE_FINNHUB_API_KEY: ${{ secrets.VITE_FINNHUB_API_KEY }}
+          VITE_ALPHA_VANTAGE_API_KEY: ${{ secrets.VITE_ALPHA_VANTAGE_API_KEY }}
           
       - name: Setup Pages
         uses: actions/configure-pages@v4
