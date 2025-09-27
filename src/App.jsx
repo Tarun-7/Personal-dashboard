@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './app.css'
 
 // Import Components
 import DashboardPage from './pages/DashboardPage';
