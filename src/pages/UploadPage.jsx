@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Check, FileText, Upload, CloudUpload, AlertCircle, Info, X } from 'lucide-react';
-import KuveraImg from '../assets/Kuvera.png';
+import KuveraImg from '../assets/kuvera.png';
 import IbkrImg from '../assets/ibkr.jpg';
 
 const UploadPage = ({
