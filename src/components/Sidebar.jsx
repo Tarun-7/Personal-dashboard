@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Home, CreditCard, BarChart3, Settings, Siren, Goal, ChevronDown, ChevronRight, PieChart, TrendingUp, DollarSign, Bitcoin, PiggyBank, Shield, Target, Bell, User, IndianRupee, Menu, X } from 'lucide-react';
 
 const sidebarItems = [
@@ -35,6 +36,15 @@ const sidebarItems = [
 ];
 
 const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
+
+  const { logout, user } = useAuth();
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      logout();
+    }
+  };
+
   // Expand all submenus by default
   const [expandedMenus, setExpandedMenus] = useState(
     sidebarItems.reduce((acc, item) => {
@@ -211,8 +221,11 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-white font-medium text-sm">Tarun Sunkara</p>
+                  <p className="text-white font-medium text-sm">{user?.name}</p>
                 </div>
+                <button onClick={handleLogout} className="logout-button">
+                  <span>Logout</span>
+                </button>
               </div>
             </div>
           </div>
