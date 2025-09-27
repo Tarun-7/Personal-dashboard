@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import './app.css'
+
+// Import Components
 import DashboardPage from './pages/DashboardPage';
 import UploadPage from './pages/UploadPage';
 import LiabilitiesPage from './pages/LiabilitiesPage';
 import GoalsPage from './pages/GoalsPage';
 import Sidebar from './components/Sidebar';
 import InrMutualFunds from './pages/INR/InrMutualFunds';
-import InrInvestmentsOverview from './pages/INR/InrOverviewPage';
 import CashSavingsPage from './pages/CashSavingsPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
 import CryptoInvestments from './pages/CryptoInvestmentsPage';
 import LoadingPage from './pages/LoadingPage';
 
+// Import Services
 import DataLoadingService from './services/DataLoadingService';
 import InvestmentCalculationService from './services/InvestmentCalculationService';
 import ExchangeRateService from './services/ExchangeRateService';
@@ -19,22 +21,25 @@ import MutualFundCalculationService from './services/MutualFundCalculationServic
 import SavingsCalculationService from './services/SavingsCalculationService'; 
 import UsdStocksCalculationService from './services/UsdStocksCalculationService';
 
+// Import authentication components
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
 import { 
   BarChart3, 
   Settings, 
   Menu
 } from 'lucide-react';
 
-
 const Dashboard = () => {
 
   // Reviewed states
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState({
     kuvera: null,
     ibkr: null
   });
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rupeeInvestments, setRupeeInvestments] = useState(0);
   const [InrMfValue, setInrMfvalue] = useState(0);
   const [cashAndSavings, setCashAndSavings] = useState(0);
@@ -478,4 +483,16 @@ useEffect(() => {
   );
 };
 
-export default Dashboard;
+function App() {
+  return (
+    <AuthProvider>
+      <div className="App">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </div>
+    </AuthProvider>
+  );
+}
+
+export default App;
