@@ -3,10 +3,12 @@ import { X, Eye, Search, TrendingUp, TrendingDown, AlertCircle, Download, SortAs
 import LoadingScreen from '../../components/LoadingScreen';
 import ReturnsCard from '../../components/ReturnsCard';
 import SummaryCard from '../../components/SummaryCard';
+import CompactFilters from '../../components/Investments/CompactFilters';
+import TransactionDetails from '../../components/Investments/TransactionDetails';
+import PortfolioTable from '../../components/Investments/PortfolioTable';
 
 // Symbol Badge Component
 const SymbolBadge = ({ symbol }) => {
-  
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-semibold shadow-sm`}>
       {symbol}
@@ -277,8 +279,8 @@ const UsdStocksDashboard = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white p-4">
-      <div className="max-w-8xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white p-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -367,147 +369,15 @@ const UsdStocksDashboard = ({
         </div>
         
         {/* Compact Filter Controls */}
-        <div className="bg-gradient-to-r from-slate-900/40 to-slate-800/40 backdrop-blur-xl rounded-2xl p-5 mb-8 border border-slate-700/50 shadow-xl">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
-            
-            {/* Search Section */}
-            <div className="flex-1 min-w-0">
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search by symbol or company name..."
-                  value={state.searchTerm}
-                  onChange={(e) => dispatch({ type: ACTIONS.SET_SEARCH, payload: e.target.value })}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 text-sm backdrop-blur-sm"
-                />
-                {state.searchTerm && (
-                  <button
-                    onClick={() => dispatch({ type: ACTIONS.SET_SEARCH, payload: '' })}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white p-1 hover:bg-slate-700 rounded-full transition-all duration-200"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Filter Section */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              {/* Filter Label
-              <div className="text-sm font-medium text-slate-300 whitespace-nowrap">
-                Filter by Performance
-              </div> */}
-              
-              {/* Filter Buttons */}
-              <div className="flex bg-slate-800/60 backdrop-blur-sm rounded-xl p-1.5 border border-slate-600/30 shadow-inner">
-                <button
-                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
-                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                    state.filterBy === 'all'
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 transform scale-105'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                  }`}
-                >
-                  <div className={`w-2 h-2 rounded-full ${
-                    state.filterBy === 'all' ? 'bg-white/80' : 'bg-slate-500'
-                  }`}></div>
-                  All Stocks
-                  {state.filterBy === 'all' && (
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-blue-600/20 animate-pulse"></div>
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'profit' })}
-                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                    state.filterBy === 'profit'
-                      ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 transform scale-105'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                  }`}
-                >
-                  <TrendingUp size={14} className={state.filterBy === 'profit' ? 'text-white' : 'text-emerald-400'} />
-                  Profitable
-                  {state.filterBy === 'profit' && (
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/20 to-green-600/20 animate-pulse"></div>
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'loss' })}
-                  className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                    state.filterBy === 'loss'
-                      ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/25 transform scale-105'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                  }`}
-                >
-                  <TrendingDown size={14} className={state.filterBy === 'loss' ? 'text-white' : 'text-red-400'} />
-                  Loss Making
-                  {state.filterBy === 'loss' && (
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-red-500/20 to-rose-600/20 animate-pulse"></div>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Results Counter */}
-            <div className="text-sm text-slate-400 bg-slate-800/30 px-3 py-2 rounded-lg border border-slate-600/30">
-              <span className="font-medium text-slate-300">{filteredAndSortedData.length}</span> 
-              <span className="ml-1">
-                {filteredAndSortedData.length === 1 ? 'stock' : 'stocks'}
-              </span>
-            </div>
-
-          </div>
-
-          {/* Active Filters Indicator */}
-          {(state.searchTerm || state.filterBy !== 'all') && (
-            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700/30">
-              <span className="text-xs text-slate-400 font-medium">Active filters:</span>
-              <div className="flex flex-wrap gap-2">
-                {state.searchTerm && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs font-medium border border-blue-500/30">
-                    <Search size={12} />
-                    "{state.searchTerm}"
-                    <button
-                      onClick={() => dispatch({ type: ACTIONS.SET_SEARCH, payload: '' })}
-                      className="ml-1 hover:bg-blue-500/30 rounded-full p-0.5 transition-colors"
-                    >
-                      <X size={10} />
-                    </button>
-                  </span>
-                )}
-                {state.filterBy !== 'all' && (
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
-                    state.filterBy === 'profit' 
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                      : 'bg-red-500/20 text-red-300 border-red-500/30'
-                  }`}>
-                    {state.filterBy === 'profit' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                    {state.filterBy === 'profit' ? 'Profitable only' : 'Loss making only'}
-                    <button
-                      onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
-                      className="ml-1 hover:bg-white/10 rounded-full p-0.5 transition-colors"
-                    >
-                      <X size={10} />
-                    </button>
-                  </span>
-                )}
-              </div>
-              
-              {/* Clear All Filters */}
-              <button
-                onClick={() => {
-                  dispatch({ type: ACTIONS.SET_SEARCH, payload: '' });
-                  dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' });
-                }}
-                className="text-xs text-slate-400 hover:text-white underline underline-offset-2 transition-colors ml-auto"
-              >
-                Clear all
-              </button>
-            </div>
-          )}
-        </div>
+        <CompactFilters
+          state={state}
+          dispatch={dispatch}
+          ACTIONS={ACTIONS}
+          filteredAndSortedData={filteredAndSortedData}
+          searchPlaceholder="Search by symbol or company name..."
+          resultLabel="stocks"
+          resultLabelSingular="stock"
+        />
 
         {/* Loading State */}
         {state.loading && (
@@ -515,177 +385,18 @@ const UsdStocksDashboard = ({
         )}
 
         {/* Portfolio Table */}
-        {!state.loading && filteredAndSortedData.length > 0 && (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-2">
-            <div className="max-w-7xl mx-auto">              
-              <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full table-fixed">
-                    <colgroup>
-                      <col className="w-2/5" />
-                      <col className="w-1/8" />
-                      <col className="w-1/6" />
-                      <col className="w-1/6" />
-                      <col className="w-1/6" />
-                    </colgroup>
-                    <thead>
-                      <tr className="border-b border-slate-700/70 bg-slate-900/80">
-                        <th
-                          className="group px-6 py-5 text-left text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('company')}
-                        >
-                          <div className="flex items-center justify-start gap-2">
-                            <span>Company</span>
-                            <SortIcon columnKey="company" />
-                          </div>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-center text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('quantity')}
-                        >
-                          <div className="flex items-center justify-center gap-2">
-                            <span>Quantity</span>
-                            <SortIcon columnKey="quantity" />
-                          </div>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('invested')}
-                        >
-                          <div className="flex items-center justify-end gap-2">
-                            <span>Net Invested</span>
-                            <SortIcon columnKey="invested" />
-                          </div>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('marketValue')}
-                        >
-                          <div className="flex items-center justify-end gap-2">
-                            <span>Market Value</span>
-                            <SortIcon columnKey="marketValue" />
-                          </div>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('profitLoss')}
-                        >
-                          <div className="flex items-center justify-end gap-2">
-                            <span>Profit / Loss</span>
-                            <SortIcon columnKey="profitLoss" />
-                          </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredAndSortedData.map((stock, index) => (
-                        <tr 
-                          key={index} 
-                          className="border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer"
-                          onClick={() => handleRowClick(stock.symbol)}
-                        >
-                          <td className="px-6 py-5">
-                            <div className="flex flex-col space-y-1">
-                              <div className="text-slate-200 font-semibold text-base truncate pr-2">
-                                {stock.companyName}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <SymbolBadge symbol={stock.symbol} />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-center">
-                              <div className="text-slate-200 font-semibold text-base">
-                                {Number(stock.totalQuantity || 0).toFixed(2)}
-                              </div>
-                              <div className="text-xs text-slate-500 mt-1">shares</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-right">
-                              <div className="text-slate-200 font-semibold text-base">
-                                {formatCurrency(stock.netInvestment)}
-                              </div>
-                              <div className="text-xs text-slate-500 mt-1">
-                                {formatPrice(stock.averageUnitPrice)} avg
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-right">
-                              <div className="text-slate-200 font-semibold text-base">
-                                {formatCurrency(stock.currentValue)}
-                              </div>
-                              <div className="text-xs text-slate-500 mt-1">
-                                {formatPrice(stock.currentPrice)} price
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-right">
-                              <div className="flex items-center justify-end gap-2 mb-1">
-                                <span className={`font-bold text-base ${
-                                  (stock.profitLoss || 0) >= 0 ? "text-emerald-400" : "text-red-400"
-                                }`}>
-                                  {formatCurrency(stock.profitLoss)}
-                                </span>
-                                {(stock.profitLoss || 0) > 0 ? (
-                                  <TrendingUp className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                ) : (stock.profitLoss || 0) < 0 ? (
-                                  <TrendingDown className="w-4 h-4 text-red-400 flex-shrink-0" />
-                                ) : null}
-                              </div>
-                              <div className={`text-xs font-semibold ${
-                                (stock.profitLoss || 0) > 0
-                                  ? 'text-emerald-400'
-                                  : (stock.profitLoss || 0) < 0
-                                  ? 'text-red-400'
-                                  : 'text-slate-400'
-                              }`}>
-                                {((returnType === "absolute"
-                                  ? stock.profitLossPercent
-                                  : stock.xirrPercent) || 0
-                                ).toFixed(2)}%
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t-2 border-blue-500/30 bg-gradient-to-r from-slate-900 to-slate-800">
-                        <td className="px-6 py-5">
-                          <div className="text-left text-white font-bold text-lg">
-                            Total Portfolio
-                          </div>
-                        </td>
-                        <td className="px-6 py-5"></td>
-                        <td className="px-6 py-5">
-                          <div className="text-right text-slate-200 font-bold text-lg">
-                            {formatCurrency(totals.totalInvested)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="text-right text-slate-200 font-bold text-lg">
-                            {formatCurrency(totals.totalCurrentValue)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className={`text-right font-bold text-lg ${
-                            totals.totalProfitLoss >= 0 ? "text-emerald-400" : "text-red-400"
-                          }`}>
-                            {formatCurrency(totals.totalProfitLoss)}
-                          </div>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <PortfolioTable
+          type="stock"
+          filteredAndSortedData={filteredAndSortedData}
+          totals={totals}
+          loading={state.loading}
+          formatCurrency={formatCurrency}
+          formatPrice={formatPrice}
+          handleSort={handleSort}
+          SortIcon={SortIcon}
+          returnType={returnType}
+          SymbolBadge={SymbolBadge}
+        />
 
         {/* No Results */}
         {!state.loading && filteredAndSortedData.length === 0 && processedData.stocksArray.length > 0 && (
@@ -696,217 +407,25 @@ const UsdStocksDashboard = ({
         )}
 
         {/* Individual Stock Transactions Section */}
-        <div className="mt-8 bg-gray-800 rounded-2xl p-6 border border-gray-700">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <BarChart3 size={24} />
-              Stock Transaction Details
-            </h2>
-            
-            {/* Stock Selection */}
-            <div className="flex items-center gap-3">
-              <span className="text-gray-300 text-sm font-medium whitespace-nowrap">Select Stock:</span>
-              <select
-                value={selectedStock}
-                onChange={(e) => {
-                  setSelectedStock(e.target.value);
-                  setShowTransactions(true);
-                }}
-                className="flex-1 lg:min-w-80 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">Choose a stock to view transactions...</option>
-                {filteredAndSortedData.map((stock, index) => (
-                  <option key={index} value={stock.symbol}>
-                    {stock.symbol} - {stock.companyName.length > 40 ? stock.companyName.substring(0, 40) + '...' : stock.companyName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {selectedStock && selectedStockData ? (
-            <div className="space-y-6">
-              {/* Stock Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                
-                {/* Stock Symbol & Badge */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Stock Details</h4>
-                  <p className="text-white text-xl font-bold" title={selectedStockData.companyName}>
-                    {selectedStockData.companyName.length > 25 ? selectedStockData.companyName.substring(0, 25) + '...' : selectedStockData.companyName}
-                  </p>
-                  <div className="mb-2">
-                    <SymbolBadge symbol={selectedStockData.symbol} />
-                  </div>
-                </div>
-
-                {/* Holdings */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Holdings</h4>
-                  <p className="text-white text-xl font-bold">{(selectedStockData.totalQuantity || 0).toFixed(4)} shares</p>
-                  <p className="text-gray-300 text-sm">Avg: {formatPrice(selectedStockData.averageUnitPrice)}</p>
-                </div>
-
-                {/* Investment Info */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Investment / Market</h4>
-                  <div className="flex flex-col">
-                    <p className="text-white text-lg font-semibold">{formatCurrency(selectedStockData.netInvestment)}</p>
-                    <p className="text-blue-400 text-lg font-semibold">{formatCurrency(selectedStockData.currentValue)}</p>
-                  </div>
-                </div>
-
-                {/* P&L Combined */}
-                <div className={`p-4 rounded-xl border ${
-                  (selectedStockData.profitLoss || 0) >= 0 
-                    ? 'bg-green-900/30 border-green-600/50' 
-                    : 'bg-red-900/30 border-red-600/50'
-                }`}>
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Profit & Loss</h4>
-                  <div className="flex flex-col">
-                    <p className={`text-lg font-bold ${
-                      (selectedStockData.profitLoss || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {formatCurrency(selectedStockData.profitLoss)}
-                    </p>
-                    <p className={`text-sm font-semibold ${
-                      (selectedStockData.profitLoss || 0) >= 0 ? 'text-green-300' : 'text-red-300'
-                    }`}>
-                      {formatPercent(
-                        returnType === 'absolute' 
-                          ? selectedStockData.profitLossPercent 
-                          : selectedStockData.xirrPercent
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Transaction History Section */}
-              <div className="bg-gray-700 rounded-xl border border-gray-600">
-                <div className="flex items-center justify-between p-4 border-b border-gray-600">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    Transaction History
-                    <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                      {selectedStockData.rows ? selectedStockData.rows.length : 0}
-                    </span>
-                  </h3>
-                  
-                  {/* Toggle Transactions Button */}
-                  <button
-                    onClick={() => setShowTransactions(!showTransactions)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
-                      showTransactions
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500 hover:text-white'
-                    }`}
-                  >
-                    {showTransactions ? (
-                      <>
-                        <Menu size={16} />
-                        Hide Transactions
-                      </>
-                    ) : (
-                      <>
-                        <Menu size={16} />
-                        Show Transactions
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Transactions Table */}
-                {showTransactions && selectedStockData.rows && selectedStockData.rows.length > 0 && (
-                  <div className="p-4">
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-gray-600">
-                            <th className="text-left py-3 px-4 text-gray-300 font-semibold">Date</th>
-                            <th className="text-left py-3 px-4 text-gray-300 font-semibold">Symbol</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Quantity</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Trade Price</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Trade Money</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Commission</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedStockData.rows.map((transaction, index) => (
-                            <tr key={index} className="border-b border-gray-700 hover:bg-gray-600/30">
-                              <td className="py-3 px-4 text-gray-200">
-                                {new Date(transaction.DateTime?.replace(';', ' ') || '').toLocaleDateString() || 'N/A'}
-                              </td>
-                              <td className="py-3 px-4 text-gray-200">
-                                {transaction.Symbol || 'N/A'}
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-medium">
-                                <span className={`${parseFloat(transaction.Quantity || 0) < 0 ? 'text-red-400' : 'text-green-400'}`}>
-                                  {parseFloat(transaction.Quantity || 0).toFixed(4)}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-medium">
-                                {formatPrice(parseFloat(transaction.TradePrice || 0))}
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-bold">
-                                {formatCurrency(parseFloat(transaction.TradeMoney || 0))}
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-medium">
-                                {formatCurrency(parseFloat(transaction.IBCommission || 0))}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        
-                        {/* Summary Row */}
-                        <tfoot>
-                          <tr className="bg-gray-600/30 border-t-2 border-gray-500">
-                            <td className="py-3 px-4 text-white font-bold">
-                              Total for {selectedStockData.symbol}
-                            </td>
-                            <td className="py-3 px-4"></td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {(selectedStockData.totalQuantity || 0).toFixed(4)}
-                            </td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {formatPrice(selectedStockData.averageUnitPrice)}
-                            </td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {formatCurrency(selectedStockData.totalAmount)}
-                            </td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {formatCurrency(selectedStockData.totalIbCommission)}
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* No Transactions Message */}
-                {showTransactions && (!selectedStockData.rows || selectedStockData.rows.length === 0) && (
-                  <div className="p-4 text-center py-8">
-                    <div className="bg-gray-600/50 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                      <List size={24} className="text-gray-400" />
-                    </div>
-                    <p className="text-gray-400">No transaction history available for this stock</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* Empty State */
-            <div className="text-center py-12">
-              <div className="bg-gray-700/50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <ChartNoAxesCombined size={32} className="text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-300 mb-2">No Stock Selected</h3>
-              <p className="text-gray-400">
-                Choose a stock from the dropdown above to view its detailed transaction history and performance metrics.
-              </p>
-            </div>
-          )}
-        </div>
+        <TransactionDetails
+          type="stock"
+          title="Stock Transaction Details"
+          selectedItem={selectedStock}
+          setSelectedItem={setSelectedStock}
+          selectedItemData={selectedStockData}
+          filteredAndSortedData={filteredAndSortedData}
+          showTransactions={showTransactions}
+          setShowTransactions={setShowTransactions}
+          formatCurrency={formatCurrency}
+          formatPrice={formatPrice}
+          formatPercent={formatPercent}
+          returnType={returnType}
+          SymbolBadge={SymbolBadge}
+          selectLabel="Select Stock:"
+          selectPlaceholder="Choose a stock to view transactions..."
+          emptyStateTitle="No Stock Selected"
+          emptyStateDescription="Choose a stock from the dropdown above to view its detailed transaction history and performance metrics."
+        />
       </div>
     </div>
   );

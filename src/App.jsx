@@ -34,7 +34,13 @@ const Dashboard = () => {
 
   // Reviewed states
   const [activeTab, setActiveTab] = useState('Dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    // Check if it's mobile on initial load
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768;
+    }
+    return false;
+  });
   const [uploadedFiles, setUploadedFiles] = useState({
     kuvera: null,
     ibkr: null
@@ -295,6 +301,22 @@ useEffect(() => {
     };
     loadInitialData();
   }, []);
+
+  // Effect to handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile && sidebarOpen) {
+        setSidebarOpen(false); // Close sidebar when switching to mobile view
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
 
 // Convert goalAmount (which is always in INR) to the selected currency
   const getGoalAmountInCurrency = () => {

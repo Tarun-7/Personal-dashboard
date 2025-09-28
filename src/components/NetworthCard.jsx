@@ -95,7 +95,7 @@ const NetWorthCard = ({
   const convertedTotalGainsLoss = convertAmount(totalGainsLoss, 'INR', netWorthCurrency);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-6">
+    <div className="flex flex-col lg:flex-row gap-6 p-3 sm:p-6">
       {/* Net Worth Card - Left Half */}
         <div className="flex-1">
           <div 
@@ -142,29 +142,29 @@ const NetWorthCard = ({
             />
             
             {/* Header Section */}
-            <div className="relative z-10 p-8 pb-4">
+            <div className="relative z-10 p-4 sm:p-8 pb-4">
               <div className="flex items-start justify-between">
                 
                 {/* Left: Title, Amount and Metrics */}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   {/* Title */}
-                  <div className="mb-8">
-                    <h3 className="text-lg font-medium text-slate-300">
+                  <div className="mb-4 sm:mb-8">
+                    <h3 className="text-base sm:text-lg font-medium text-slate-300">
                       Total Net Worth
                     </h3>
                   </div>
 
                   {/* Main Amount with Performance Badge */}
-                  <div className="text-center mb-8">
-                    <div className="flex items-baseline justify-center mb-3">
+                  <div className="text-center mb-4 sm:mb-8">
+                    <div className="flex items-baseline justify-center mb-3 overflow-hidden">
                       <span 
-                        className="text-2xl font-bold mr-2"
+                        className="text-xl sm:text-2xl font-bold mr-1 sm:mr-2 flex-shrink-0"
                         style={{ color: colors.primary }}
                       >
                         {symbolForYourCurrency}
                       </span>
                       <span 
-                        className="text-5xl sm:text-6xl font-black tracking-tight"
+                        className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight min-w-0 truncate"
                         style={{
                           background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%)',
                           WebkitBackgroundClip: 'text',
@@ -178,9 +178,9 @@ const NetWorthCard = ({
                     </div>
                     
                     {/* Performance badge directly below amount */}
-                    <div className="flex justify-center">
+                    <div className="flex flex-col sm:flex-row justify-center items-center gap-2">
                       <div
-                        className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium backdrop-blur-sm border transition-all duration-300"
+                        className="inline-flex items-center rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium backdrop-blur-sm border transition-all duration-300"
                         style={{
                           background: `linear-gradient(135deg, ${colors.glow} 0%, ${colors.glow} 100%)`,
                           borderColor: `${colors.primary}50`,
@@ -188,15 +188,15 @@ const NetWorthCard = ({
                           boxShadow: `0 3px 8px ${colors.glow}`
                         }}
                       >
-                        <TrendingUp className="w-4 h-4 mr-2" />
+                        <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         +12.5% this month
                       </div>
 
                       {/* Exchange Rate Badge - Bottom */}
                       {netWorthCurrency !== 'INR' && (
-                        <div className="flex justify-center ml-2">
+                        <div className="flex justify-center">
                           <div
-                            className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium backdrop-blur-sm border"
+                            className="inline-flex items-center rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium backdrop-blur-sm border"
                             style={{
                               background: `linear-gradient(135deg, ${colors.glow} 0%, ${colors.glow} 100%)`,
                               borderColor: `${colors.primary}50`,
@@ -204,7 +204,7 @@ const NetWorthCard = ({
                               boxShadow: `0 3px 8px ${colors.glow}`
                             }}
                           >
-                            <span className="text-sm">
+                            <span className="text-xs sm:text-sm">
                               1 {netWorthCurrency} = ₹{netWorthCurrency === 'USD' ? usdInrRate.toFixed(2) : euroInrRate.toFixed(2)}
                             </span>
                           </div>
@@ -214,20 +214,20 @@ const NetWorthCard = ({
                   </div>
                   
                   {/* Invested vs Gains/Loss - Side by Side */}
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-6">
                     {/* Total Invested */}
-                    <div className="text-center">
+                    <div className="text-center min-w-0">
                       <div className="flex items-center justify-center mb-2">
                         <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 mr-2"></div>
                         <span className="text-xs text-slate-400 font-medium">INVESTED</span>
                       </div>
-                      <div className="text-blue-300 font-bold text-xl">
+                      <div className="text-blue-300 font-bold text-sm sm:text-xl truncate">
                         {symbolForYourCurrency}{Math.round(convertedTotalInvested).toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
                       </div>
                     </div>
                     
                     {/* Gains/Loss */}
-                    <div className="text-center">
+                    <div className="text-center min-w-0">
                       <div className="flex items-center justify-center mb-2">
                         <div 
                           className="w-2 h-2 rounded-full mr-2"
@@ -241,7 +241,7 @@ const NetWorthCard = ({
                           {isGain ? 'GAINS' : 'LOSS'}
                         </span>
                       </div>
-                      <div className={`font-bold text-xl ${gainsLossTextColor}`}>
+                      <div className={`font-bold text-sm sm:text-xl ${gainsLossTextColor} truncate`}>
                          {isGain ? '+' : '-'} {symbolForYourCurrency}{Math.abs(Math.round(convertedTotalGainsLoss)).toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
                       </div>
                     </div>
@@ -249,7 +249,7 @@ const NetWorthCard = ({
                 </div>
 
                 {/* Right: Premium Currency Switcher */}
-                <div className="flex flex-col items-center ml-8">
+                <div className="flex flex-col items-center ml-4 sm:ml-8 flex-shrink-0">
                   <div className="relative">
                     {/* Glow effect */}
                     <div
@@ -262,7 +262,7 @@ const NetWorthCard = ({
                       onClick={() => setNetWorthCurrency(prev =>
                         prev === 'INR' ? 'USD' : prev === 'USD' ? 'EUR' : 'INR'
                       )}
-                      className="relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 hover:scale-110 cursor-pointer group border border-white/20 backdrop-blur-sm"
+                      className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-500 hover:scale-110 cursor-pointer group border border-white/20 backdrop-blur-sm"
                       style={{ 
                         background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
                         boxShadow: `inset 0 2px 0 rgba(255, 255, 255, 0.2), 0 6px 16px ${colors.glow}`
@@ -270,9 +270,9 @@ const NetWorthCard = ({
                     >
                       {/* Currency Icon */}
                       <div className="relative z-10">
-                        {netWorthCurrency === 'INR' && <IndianRupee className="w-6 h-6 text-white drop-shadow-sm" />}
-                        {netWorthCurrency === 'USD' && <DollarSign className="w-6 h-6 text-white drop-shadow-sm" />}
-                        {netWorthCurrency === 'EUR' && <Euro className="w-6 h-6 text-white drop-shadow-sm" />}
+                        {netWorthCurrency === 'INR' && <IndianRupee className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-sm" />}
+                        {netWorthCurrency === 'USD' && <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-sm" />}
+                        {netWorthCurrency === 'EUR' && <Euro className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-sm" />}
                       </div>
                       
                       {/* Hover overlay */}

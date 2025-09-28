@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     
     if (passwordHash === CORRECT_PASSWORD_HASH) {
       const userData = {
-        name: 'Dashboard Owner',
+        name: import.meta.env.VITE_USER_NAME,
         loginTime: new Date().toISOString()
       };
       
