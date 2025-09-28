@@ -5,6 +5,7 @@ import ReturnsCard from '../../components/ReturnsCard';
 import SummaryCard from '../../components/SummaryCard';
 import CompactFilters from '../../components/Investments/CompactFilters';
 import TransactionDetails from '../../components/Investments/TransactionDetails';
+import PortfolioTable from '../../components/Investments/PortfolioTable';
 
 // Fund Badge Component
 const FundBadge = ({ fundName }) => {
@@ -375,151 +376,17 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
         )}
 
         {/* Portfolio Table */}
-        {!state.loading && filteredAndSortedData.length > 0 && (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-2">
-            <div className="max-w-7xl mx-auto">              
-              <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="border-b border-slate-700/70 bg-slate-900/80">
-                        <th
-                          className="group px-6 py-5 text-left text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('fund')}
-                        >
-                          <span className="inline-flex items-center">
-                            Fund Name
-                            <SortIcon columnKey="fund" />
-                          </span>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('units')}
-                        >
-                          <span className="inline-flex items-center justify-end w-full">
-                            Quantity
-                            <SortIcon columnKey="units" />
-                          </span>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('invested')}
-                        >
-                          <span className="inline-flex items-center justify-end w-full">
-                            Net Invested
-                            <SortIcon columnKey="invested" />
-                          </span>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('marketValue')}
-                        >
-                          <span className="inline-flex items-center justify-end w-full">
-                            Market Value
-                            <SortIcon columnKey="marketValue" />
-                          </span>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('profitLoss')}
-                        >
-                          <span className="inline-flex items-center justify-end w-full">
-                            Profit / Loss
-                            <SortIcon columnKey="profitLoss" />
-                          </span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredAndSortedData.map((fund, index) => (
-                        <tr 
-                          key={index} 
-                          className="border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
-                        >
-                          <td className="px-6 py-5">
-                            <div className="font-semibold text-white text-base mb-1">
-                              {fund.fund.length > 50 ? fund.fund.substring(0, 50) + '...' : fund.fund}
-                            </div>
-                            <div className="mt-2">
-                              <FundBadge fundName={fund.fund} />
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="text-slate-200 font-semibold text-base">
-                              {Number(fund.totalUnits || 0).toFixed(2)}
-                            </div>
-                            <div className="text-xs text-slate-500 mt-1">units</div>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="text-slate-200 font-semibold text-base">
-                              {formatCurrency(fund.totalAmount)}
-                            </div>
-                            <div className="text-xs text-slate-500 mt-1 font-medium">
-                              ₹{((fund.avgNav || 0)).toFixed(2)} avg
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="text-slate-200 font-semibold text-base">
-                              {formatCurrency(fund.currentValue)}
-                            </div>
-                            <div className="text-xs text-slate-500 mt-1 font-medium">
-                              ₹{((fund.marketValue || 0)).toFixed(2)} NAV
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <div className="flex items-center justify-end space-x-2">
-                              <span className={`font-bold text-base ${
-                                (fund.profitLoss || 0) >= 0 ? "text-emerald-400" : "text-red-400"
-                              }`}>
-                                {formatCurrency(fund.profitLoss)}
-                              </span>
-                              {(fund.profitLoss || 0) > 0 ? (
-                                <TrendingUp className="w-5 h-5 text-emerald-400 hover:scale-110 transition-transform duration-200" />
-                              ) : (fund.profitLoss || 0) < 0 ? (
-                                <TrendingDown className="w-5 h-5 text-red-400 hover:scale-110 transition-transform duration-200" />
-                              ) : null}
-                            </div>
-                            <div className={`text-xs mt-1 font-semibold ${
-                              (fund.profitLoss || 0) > 0
-                                ? 'text-emerald-400'
-                                : (fund.profitLoss || 0) < 0
-                                ? 'text-red-400'
-                                : 'text-slate-400'
-                            }`}>
-                              {((returnType === "absolute"
-                                ? fund.profitLossPercent
-                                : fund.xirrPercent) || 0
-                              ).toFixed(2)}%
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t-2 border-blue-500/30 bg-gradient-to-r from-slate-900 to-slate-800">
-                        <td className="px-6 py-5 text-left text-white font-bold text-lg">
-                          Total Portfolio
-                        </td>
-                        <td className="px-6 py-5 text-right"></td>
-                        <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
-                          {formatCurrency(totals.totalInvested)}
-                        </td>
-                        <td className="px-6 py-5 text-right text-slate-200 font-bold text-lg">
-                          {formatCurrency(totals.totalCurrentValue)}
-                        </td>
-                        <td className={`px-6 py-5 text-right font-bold text-lg ${
-                          totals.totalProfitLoss >= 0 ? "text-emerald-400" : "text-red-400"
-                        }`}>
-                          {formatCurrency(totals.totalProfitLoss)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <PortfolioTable
+          type="fund"
+          filteredAndSortedData={filteredAndSortedData}
+          totals={totals}
+          loading={state.loading}
+          formatCurrency={formatCurrency}
+          handleSort={handleSort}
+          SortIcon={SortIcon}
+          returnType={returnType}
+          FundBadge={FundBadge}
+        />
 
         {/* No Results */}
         {!state.loading && filteredAndSortedData.length === 0 && processedData.fundsArray.length > 0 && (

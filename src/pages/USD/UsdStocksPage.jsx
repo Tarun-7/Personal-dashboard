@@ -5,6 +5,7 @@ import ReturnsCard from '../../components/ReturnsCard';
 import SummaryCard from '../../components/SummaryCard';
 import CompactFilters from '../../components/Investments/CompactFilters';
 import TransactionDetails from '../../components/Investments/TransactionDetails';
+import PortfolioTable from '../../components/Investments/PortfolioTable';
 
 // Symbol Badge Component
 const SymbolBadge = ({ symbol }) => {
@@ -384,177 +385,18 @@ const UsdStocksDashboard = ({
         )}
 
         {/* Portfolio Table */}
-        {!state.loading && filteredAndSortedData.length > 0 && (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-2">
-            <div className="max-w-7xl mx-auto">              
-              <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full table-fixed">
-                    <colgroup>
-                      <col className="w-2/5" />
-                      <col className="w-1/8" />
-                      <col className="w-1/6" />
-                      <col className="w-1/6" />
-                      <col className="w-1/6" />
-                    </colgroup>
-                    <thead>
-                      <tr className="border-b border-slate-700/70 bg-slate-900/80">
-                        <th
-                          className="group px-6 py-5 text-left text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('company')}
-                        >
-                          <div className="flex items-center justify-start gap-2">
-                            <span>Company</span>
-                            <SortIcon columnKey="company" />
-                          </div>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-center text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('quantity')}
-                        >
-                          <div className="flex items-center justify-center gap-2">
-                            <span>Quantity</span>
-                            <SortIcon columnKey="quantity" />
-                          </div>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('invested')}
-                        >
-                          <div className="flex items-center justify-end gap-2">
-                            <span>Net Invested</span>
-                            <SortIcon columnKey="invested" />
-                          </div>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('marketValue')}
-                        >
-                          <div className="flex items-center justify-end gap-2">
-                            <span>Market Value</span>
-                            <SortIcon columnKey="marketValue" />
-                          </div>
-                        </th>
-                        <th
-                          className="group px-6 py-5 text-right text-sm font-semibold text-slate-300 cursor-pointer select-none hover:text-blue-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => handleSort('profitLoss')}
-                        >
-                          <div className="flex items-center justify-end gap-2">
-                            <span>Profit / Loss</span>
-                            <SortIcon columnKey="profitLoss" />
-                          </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredAndSortedData.map((stock, index) => (
-                        <tr 
-                          key={index} 
-                          className="border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer"
-                          onClick={() => handleRowClick(stock.symbol)}
-                        >
-                          <td className="px-6 py-5">
-                            <div className="flex flex-col space-y-1">
-                              <div className="text-slate-200 font-semibold text-base truncate pr-2">
-                                {stock.companyName}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <SymbolBadge symbol={stock.symbol} />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-center">
-                              <div className="text-slate-200 font-semibold text-base">
-                                {Number(stock.totalQuantity || 0).toFixed(2)}
-                              </div>
-                              <div className="text-xs text-slate-500 mt-1">shares</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-right">
-                              <div className="text-slate-200 font-semibold text-base">
-                                {formatCurrency(stock.netInvestment)}
-                              </div>
-                              <div className="text-xs text-slate-500 mt-1">
-                                {formatPrice(stock.averageUnitPrice)} avg
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-right">
-                              <div className="text-slate-200 font-semibold text-base">
-                                {formatCurrency(stock.currentValue)}
-                              </div>
-                              <div className="text-xs text-slate-500 mt-1">
-                                {formatPrice(stock.currentPrice)} price
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="text-right">
-                              <div className="flex items-center justify-end gap-2 mb-1">
-                                <span className={`font-bold text-base ${
-                                  (stock.profitLoss || 0) >= 0 ? "text-emerald-400" : "text-red-400"
-                                }`}>
-                                  {formatCurrency(stock.profitLoss)}
-                                </span>
-                                {(stock.profitLoss || 0) > 0 ? (
-                                  <TrendingUp className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                ) : (stock.profitLoss || 0) < 0 ? (
-                                  <TrendingDown className="w-4 h-4 text-red-400 flex-shrink-0" />
-                                ) : null}
-                              </div>
-                              <div className={`text-xs font-semibold ${
-                                (stock.profitLoss || 0) > 0
-                                  ? 'text-emerald-400'
-                                  : (stock.profitLoss || 0) < 0
-                                  ? 'text-red-400'
-                                  : 'text-slate-400'
-                              }`}>
-                                {((returnType === "absolute"
-                                  ? stock.profitLossPercent
-                                  : stock.xirrPercent) || 0
-                                ).toFixed(2)}%
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t-2 border-blue-500/30 bg-gradient-to-r from-slate-900 to-slate-800">
-                        <td className="px-6 py-5">
-                          <div className="text-left text-white font-bold text-lg">
-                            Total Portfolio
-                          </div>
-                        </td>
-                        <td className="px-6 py-5"></td>
-                        <td className="px-6 py-5">
-                          <div className="text-right text-slate-200 font-bold text-lg">
-                            {formatCurrency(totals.totalInvested)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="text-right text-slate-200 font-bold text-lg">
-                            {formatCurrency(totals.totalCurrentValue)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className={`text-right font-bold text-lg ${
-                            totals.totalProfitLoss >= 0 ? "text-emerald-400" : "text-red-400"
-                          }`}>
-                            {formatCurrency(totals.totalProfitLoss)}
-                          </div>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <PortfolioTable
+          type="stock"
+          filteredAndSortedData={filteredAndSortedData}
+          totals={totals}
+          loading={state.loading}
+          formatCurrency={formatCurrency}
+          formatPrice={formatPrice}
+          handleSort={handleSort}
+          SortIcon={SortIcon}
+          returnType={returnType}
+          SymbolBadge={SymbolBadge}
+        />
 
         {/* No Results */}
         {!state.loading && filteredAndSortedData.length === 0 && processedData.stocksArray.length > 0 && (
