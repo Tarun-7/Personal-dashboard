@@ -4,6 +4,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import ReturnsCard from '../../components/ReturnsCard';
 import SummaryCard from '../../components/SummaryCard';
 import CompactFilters from '../../components/Investments/CompactFilters';
+import TransactionDetails from '../../components/Investments/TransactionDetails';
 
 // Fund Badge Component
 const FundBadge = ({ fundName }) => {
@@ -529,222 +530,25 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
         )}
 
         {/* Individual Fund Transactions Section */}
-        <div className="mt-8 bg-gray-800 rounded-2xl p-6 border border-gray-700">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <BarChart3 size={24} />
-              Fund Transaction Details
-            </h2>
-            
-            {/* Fund Selection */}
-            <div className="flex items-center gap-3">
-              <span className="text-gray-300 text-sm font-medium whitespace-nowrap">Select Fund:</span>
-              <select
-                value={selectedFund}
-                onChange={(e) => {
-                  setSelectedFund(e.target.value);
-                  setShowTransactions(true);
-                }}
-                className="flex-1 lg:min-w-80 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">Choose a fund to view transactions...</option>
-                {filteredAndSortedData.map((fund, index) => (
-                  <option key={index} value={fund.fund}>
-                    {fund.fund.length > 60 ? fund.fund.substring(0, 60) + '...' : fund.fund}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {selectedFund && selectedFundData ? (
-            <div className="space-y-6">
-              {/* Fund Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                
-                {/* Fund Name & Badge */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Fund Details</h4>
-                  <div className="mb-2">
-                    <FundBadge fundName={selectedFundData.fund} />
-                  </div>
-                  <p className="text-gray-300 text-sm truncate" title={selectedFundData.fund}>
-                    {selectedFundData.fund.length > 25 ? selectedFundData.fund.substring(0, 25) + '...' : selectedFundData.fund}
-                  </p>
-                </div>
-
-                {/* Holdings */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Holdings</h4>
-                  <p className="text-white text-xl font-bold">{(selectedFundData.totalUnits || 0).toFixed(4)} units</p>
-                  <p className="text-gray-300 text-sm">Avg: ₹{((selectedFundData.avgNav || 0)).toFixed(2)}</p>
-                </div>
-
-                {/* Investment Info */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Investment / Market</h4>
-                  <div className="flex flex-col">
-                    <p className="text-white text-lg font-semibold">{formatCurrency(selectedFundData.totalAmount)}</p>
-                    <p className="text-blue-400 text-lg font-semibold">{formatCurrency(selectedFundData.currentValue)}</p>
-                  </div>
-                </div>
-
-                {/* P&L Combined */}
-                <div className={`p-4 rounded-xl border ${
-                  (selectedFundData.profitLoss || 0) >= 0 
-                    ? 'bg-green-900/30 border-green-600/50' 
-                    : 'bg-red-900/30 border-red-600/50'
-                }`}>
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Profit & Loss</h4>
-                  <div className="flex flex-col">
-                    <p className={`text-lg font-bold ${
-                      (selectedFundData.profitLoss || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {formatCurrency(selectedFundData.profitLoss)}
-                    </p>
-                    <p className={`text-sm font-semibold ${
-                      (selectedFundData.profitLoss || 0) >= 0 ? 'text-green-300' : 'text-red-300'
-                    }`}>
-                      {formatPercent(
-                        returnType === 'absolute' 
-                          ? selectedFundData.profitLossPercent 
-                          : selectedFundData.xirrPercent
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Transaction History Section */}
-              <div className="bg-gray-700 rounded-xl border border-gray-600">
-                <div className="flex items-center justify-between p-4 border-b border-gray-600">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    Transaction History
-                    <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                      {selectedFundData.transactions ? selectedFundData.transactions.length : 0}
-                    </span>
-                  </h3>
-                  
-                  {/* Toggle Transactions Button */}
-                  <button
-                    onClick={() => setShowTransactions(!showTransactions)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
-                      showTransactions
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500 hover:text-white'
-                    }`}
-                  >
-                    {showTransactions ? (
-                      <>
-                        <TrendingDown size={16} />
-                        Hide Transactions
-                      </>
-                    ) : (
-                      <>
-                        <TrendingUp size={16} />
-                        Show Transactions
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Transactions Table */}
-                {showTransactions && selectedFundData.transactions && selectedFundData.transactions.length > 0 && (
-                  <div className="p-4">
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-gray-600">
-                            <th className="text-left py-3 px-4 text-gray-300 font-semibold">Date</th>
-                            <th className="text-left py-3 px-4 text-gray-300 font-semibold">Folio</th>
-                            <th className="text-left py-3 px-4 text-gray-300 font-semibold">Type</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Units</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">NAV</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedFundData.transactions.map((transaction, index) => (
-                            <tr key={index} className="border-b border-gray-700 hover:bg-gray-600/30">
-                              <td className="py-3 px-4 text-gray-200">
-                                {transaction["Date"] || Object.values(transaction)[0] || 'N/A'}
-                              </td>
-                              <td className="py-3 px-4 text-gray-200">
-                                {transaction["Folio Number"] || Object.values(transaction)[1] || 'N/A'}
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                  ((transaction["Order"] || Object.values(transaction)[3] || 'BUY').toUpperCase() === 'BUY' || 
-                                   (transaction["Order"] || Object.values(transaction)[3] || 'BUY').toUpperCase() === 'PURCHASE')
-                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                                    : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                }`}>
-                                  {transaction["Order"] || Object.values(transaction)[3] || 'BUY'}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-medium">
-                                <span className={`${parseFloat(transaction["Units"] || Object.values(transaction)[4] || 0) < 0 ? 'text-red-400' : 'text-green-400'}`}>
-                                  {parseFloat(transaction["Units"] || Object.values(transaction)[4] || 0).toFixed(4)}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-medium">
-                                ₹{parseFloat(transaction["NAV"] || Object.values(transaction)[5] || 0).toFixed(2)}
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-bold">
-                                {formatCurrency(parseFloat(transaction["Amount (INR)"] || Object.values(transaction)[7] || 0))}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        
-                        {/* Summary Row */}
-                        <tfoot>
-                          <tr className="bg-gray-600/30 border-t-2 border-gray-500">
-                            <td className="py-3 px-4 text-white font-bold">
-                              Total for {selectedFundData.fund.length > 20 ? selectedFundData.fund.substring(0, 20) + '...' : selectedFundData.fund}
-                            </td>
-                            <td className="py-3 px-4"></td>
-                            <td className="py-3 px-4"></td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {(selectedFundData.totalUnits || 0).toFixed(4)}
-                            </td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              ₹{((selectedFundData.avgNav || 0)).toFixed(2)}
-                            </td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {formatCurrency(selectedFundData.totalAmount)}
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* No Transactions Message */}
-                {showTransactions && (!selectedFundData.transactions || selectedFundData.transactions.length === 0) && (
-                  <div className="p-4 text-center py-8">
-                    <div className="bg-gray-600/50 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                      <List size={24} className="text-gray-400" />
-                    </div>
-                    <p className="text-gray-400">No transaction history available for this fund</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* Empty State */
-            <div className="text-center py-12">
-              <div className="bg-gray-700/50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <ChartNoAxesCombined size={32} className="text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-300 mb-2">No Fund Selected</h3>
-              <p className="text-gray-400">
-                Choose a fund from the dropdown above to view its detailed transaction history and performance metrics.
-              </p>
-            </div>
-          )}
-        </div>
+        <TransactionDetails
+          type="fund"
+          title="Fund Transaction Details"
+          selectedItem={selectedFund}
+          setSelectedItem={setSelectedFund}
+          selectedItemData={selectedFundData}
+          filteredAndSortedData={filteredAndSortedData}
+          showTransactions={showTransactions}
+          setShowTransactions={setShowTransactions}
+          formatCurrency={formatCurrency}
+          formatPrice={formatCurrency}
+          formatPercent={formatPercent}
+          returnType={returnType}
+          FundBadge={FundBadge}
+          selectLabel="Select Fund:"
+          selectPlaceholder="Choose a fund to view transactions..."
+          emptyStateTitle="No Fund Selected"
+          emptyStateDescription="Choose a fund from the dropdown above to view its detailed transaction history and performance metrics."
+        />
       </div>
     </div>
   );

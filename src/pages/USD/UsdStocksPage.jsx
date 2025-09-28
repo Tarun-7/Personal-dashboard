@@ -4,10 +4,10 @@ import LoadingScreen from '../../components/LoadingScreen';
 import ReturnsCard from '../../components/ReturnsCard';
 import SummaryCard from '../../components/SummaryCard';
 import CompactFilters from '../../components/Investments/CompactFilters';
+import TransactionDetails from '../../components/Investments/TransactionDetails';
 
 // Symbol Badge Component
 const SymbolBadge = ({ symbol }) => {
-  
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-semibold shadow-sm`}>
       {symbol}
@@ -565,217 +565,25 @@ const UsdStocksDashboard = ({
         )}
 
         {/* Individual Stock Transactions Section */}
-        <div className="mt-8 bg-gray-800 rounded-2xl p-6 border border-gray-700">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <BarChart3 size={24} />
-              Stock Transaction Details
-            </h2>
-            
-            {/* Stock Selection */}
-            <div className="flex items-center gap-3">
-              <span className="text-gray-300 text-sm font-medium whitespace-nowrap">Select Stock:</span>
-              <select
-                value={selectedStock}
-                onChange={(e) => {
-                  setSelectedStock(e.target.value);
-                  setShowTransactions(true);
-                }}
-                className="flex-1 lg:min-w-80 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">Choose a stock to view transactions...</option>
-                {filteredAndSortedData.map((stock, index) => (
-                  <option key={index} value={stock.symbol}>
-                    {stock.symbol} - {stock.companyName.length > 40 ? stock.companyName.substring(0, 40) + '...' : stock.companyName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {selectedStock && selectedStockData ? (
-            <div className="space-y-6">
-              {/* Stock Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                
-                {/* Stock Symbol & Badge */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Stock Details</h4>
-                  <p className="text-white text-xl font-bold" title={selectedStockData.companyName}>
-                    {selectedStockData.companyName.length > 25 ? selectedStockData.companyName.substring(0, 25) + '...' : selectedStockData.companyName}
-                  </p>
-                  <div className="mb-2">
-                    <SymbolBadge symbol={selectedStockData.symbol} />
-                  </div>
-                </div>
-
-                {/* Holdings */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Holdings</h4>
-                  <p className="text-white text-xl font-bold">{(selectedStockData.totalQuantity || 0).toFixed(4)} shares</p>
-                  <p className="text-gray-300 text-sm">Avg: {formatPrice(selectedStockData.averageUnitPrice)}</p>
-                </div>
-
-                {/* Investment Info */}
-                <div className="bg-gray-700 p-4 rounded-xl border border-gray-600">
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Investment / Market</h4>
-                  <div className="flex flex-col">
-                    <p className="text-white text-lg font-semibold">{formatCurrency(selectedStockData.netInvestment)}</p>
-                    <p className="text-blue-400 text-lg font-semibold">{formatCurrency(selectedStockData.currentValue)}</p>
-                  </div>
-                </div>
-
-                {/* P&L Combined */}
-                <div className={`p-4 rounded-xl border ${
-                  (selectedStockData.profitLoss || 0) >= 0 
-                    ? 'bg-green-900/30 border-green-600/50' 
-                    : 'bg-red-900/30 border-red-600/50'
-                }`}>
-                  <h4 className="text-gray-400 text-sm font-medium mb-1">Profit & Loss</h4>
-                  <div className="flex flex-col">
-                    <p className={`text-lg font-bold ${
-                      (selectedStockData.profitLoss || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {formatCurrency(selectedStockData.profitLoss)}
-                    </p>
-                    <p className={`text-sm font-semibold ${
-                      (selectedStockData.profitLoss || 0) >= 0 ? 'text-green-300' : 'text-red-300'
-                    }`}>
-                      {formatPercent(
-                        returnType === 'absolute' 
-                          ? selectedStockData.profitLossPercent 
-                          : selectedStockData.xirrPercent
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Transaction History Section */}
-              <div className="bg-gray-700 rounded-xl border border-gray-600">
-                <div className="flex items-center justify-between p-4 border-b border-gray-600">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    Transaction History
-                    <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                      {selectedStockData.rows ? selectedStockData.rows.length : 0}
-                    </span>
-                  </h3>
-                  
-                  {/* Toggle Transactions Button */}
-                  <button
-                    onClick={() => setShowTransactions(!showTransactions)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
-                      showTransactions
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500 hover:text-white'
-                    }`}
-                  >
-                    {showTransactions ? (
-                      <>
-                        <Menu size={16} />
-                        Hide Transactions
-                      </>
-                    ) : (
-                      <>
-                        <Menu size={16} />
-                        Show Transactions
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Transactions Table */}
-                {showTransactions && selectedStockData.rows && selectedStockData.rows.length > 0 && (
-                  <div className="p-4">
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-gray-600">
-                            <th className="text-left py-3 px-4 text-gray-300 font-semibold">Date</th>
-                            <th className="text-left py-3 px-4 text-gray-300 font-semibold">Symbol</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Quantity</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Trade Price</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Trade Money</th>
-                            <th className="text-right py-3 px-4 text-gray-300 font-semibold">Commission</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedStockData.rows.map((transaction, index) => (
-                            <tr key={index} className="border-b border-gray-700 hover:bg-gray-600/30">
-                              <td className="py-3 px-4 text-gray-200">
-                                {new Date(transaction.DateTime?.replace(';', ' ') || '').toLocaleDateString() || 'N/A'}
-                              </td>
-                              <td className="py-3 px-4 text-gray-200">
-                                {transaction.Symbol || 'N/A'}
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-medium">
-                                <span className={`${parseFloat(transaction.Quantity || 0) < 0 ? 'text-red-400' : 'text-green-400'}`}>
-                                  {parseFloat(transaction.Quantity || 0).toFixed(4)}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-medium">
-                                {formatPrice(parseFloat(transaction.TradePrice || 0))}
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-bold">
-                                {formatCurrency(parseFloat(transaction.TradeMoney || 0))}
-                              </td>
-                              <td className="py-3 px-4 text-right text-white font-medium">
-                                {formatCurrency(parseFloat(transaction.IBCommission || 0))}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        
-                        {/* Summary Row */}
-                        <tfoot>
-                          <tr className="bg-gray-600/30 border-t-2 border-gray-500">
-                            <td className="py-3 px-4 text-white font-bold">
-                              Total for {selectedStockData.symbol}
-                            </td>
-                            <td className="py-3 px-4"></td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {(selectedStockData.totalQuantity || 0).toFixed(4)}
-                            </td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {formatPrice(selectedStockData.averageUnitPrice)}
-                            </td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {formatCurrency(selectedStockData.totalAmount)}
-                            </td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              {formatCurrency(selectedStockData.totalIbCommission)}
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* No Transactions Message */}
-                {showTransactions && (!selectedStockData.rows || selectedStockData.rows.length === 0) && (
-                  <div className="p-4 text-center py-8">
-                    <div className="bg-gray-600/50 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                      <List size={24} className="text-gray-400" />
-                    </div>
-                    <p className="text-gray-400">No transaction history available for this stock</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* Empty State */
-            <div className="text-center py-12">
-              <div className="bg-gray-700/50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <ChartNoAxesCombined size={32} className="text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-300 mb-2">No Stock Selected</h3>
-              <p className="text-gray-400">
-                Choose a stock from the dropdown above to view its detailed transaction history and performance metrics.
-              </p>
-            </div>
-          )}
-        </div>
+        <TransactionDetails
+          type="stock"
+          title="Stock Transaction Details"
+          selectedItem={selectedStock}
+          setSelectedItem={setSelectedStock}
+          selectedItemData={selectedStockData}
+          filteredAndSortedData={filteredAndSortedData}
+          showTransactions={showTransactions}
+          setShowTransactions={setShowTransactions}
+          formatCurrency={formatCurrency}
+          formatPrice={formatPrice}
+          formatPercent={formatPercent}
+          returnType={returnType}
+          SymbolBadge={SymbolBadge}
+          selectLabel="Select Stock:"
+          selectPlaceholder="Choose a stock to view transactions..."
+          emptyStateTitle="No Stock Selected"
+          emptyStateDescription="Choose a stock from the dropdown above to view its detailed transaction history and performance metrics."
+        />
       </div>
     </div>
   );
