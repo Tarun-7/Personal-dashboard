@@ -230,12 +230,12 @@ const TransactionDetails = ({
               >
                 {showTransactions ? (
                   <>
-                    {isStock ? <Menu size={16} /> : <TrendingDown size={16} />}
+                    <Menu size={16} />
                     Hide Transactions
                   </>
                 ) : (
                   <>
-                    {isStock ? <Menu size={16} /> : <TrendingUp size={16} />}
+                    <Menu size={16} />
                     Show Transactions
                   </>
                 )}

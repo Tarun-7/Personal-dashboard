@@ -5,6 +5,7 @@ import {
 import { ResponsiveContainer, XAxis, YAxis, BarChart, Bar } from 'recharts';
 import NetWorthCard from '../components/NetworthCard';
 import InvestmentCard from '../components/InvestmentCard';
+import PageHeader from '../components/PageHeader';
 
 const Dashboard = ({
   netWorth,
@@ -25,16 +26,14 @@ const Dashboard = ({
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <div className="flex justify-between items-start pb-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-              Portfolio Overview
-            </h1>
-            <p className="text-gray-400">
-              Your comprehensive financial dashboard
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          title="Portfolio Overview"
+          description="Your comprehensive financial dashboard"
+          showEyeToggle={false}
+          showBalance={false}
+          onEyeToggle={() => {}} // No-op since it's disabled
+          buttons={[]}
+        />
 
         {/* Net Worth Card */}
         <NetWorthCard
