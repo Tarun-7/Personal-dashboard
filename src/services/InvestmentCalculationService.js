@@ -18,18 +18,18 @@ class InvestmentCalculationService {
   }
 
   static calculateNetWorth(investments, exchangeRates, currency = 'INR') {
-    const { rupee, usd, euro } = investments;
+    const { rupee, usd, cashAndSavings } = investments;
     const { usdInr, euroInr } = exchangeRates;
 
     switch (currency) {
       case 'INR':
-        return rupee + (usd * usdInr) + (euro * euroInr);
+        return rupee + (usd * usdInr) + (cashAndSavings);
       case 'USD':
-        return (rupee / usdInr) + usd + ((euro * euroInr) / usdInr);
+        return (rupee / usdInr) + usd + (cashAndSavings / usdInr);
       case 'EUR':
-        return (rupee / euroInr) + (usd * (usdInr / euroInr)) + euro;
+        return (rupee / euroInr) + (usd * (usdInr / euroInr)) + (cashAndSavings / euroInr);
       default:
-        return rupee + (usd * usdInr) + (euro * euroInr);
+        return rupee + (usd * usdInr) + cashAndSavings;
     }
   }
 

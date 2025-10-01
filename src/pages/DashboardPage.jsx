@@ -1,6 +1,7 @@
 import React from 'react';
 import { 
-  IndianRupee, DollarSign, Euro, Siren, Plus 
+  IndianRupee, DollarSign, Euro, Siren, Plus, 
+  PiggyBank
 } from 'lucide-react';
 import { ResponsiveContainer, XAxis, YAxis, BarChart, Bar } from 'recharts';
 import NetWorthCard from '../components/NetworthCard';
@@ -13,7 +14,7 @@ const Dashboard = ({
   setNetWorthCurrency,
   rupeeInvestments,
   usdInvestments,
-  euroInvestments,
+  cashAndSavings,
   usdInrRate,
   euroInrRate,
   getGoalAmountInCurrency,
@@ -42,7 +43,7 @@ const Dashboard = ({
           setNetWorthCurrency={setNetWorthCurrency}
           rupeeInvestments={rupeeInvestments}
           usdInvestments={usdInvestments}
-          euroInvestments={euroInvestments}
+          cashAndSavings={cashAndSavings}
           usdInrRate={usdInrRate}
           euroInrRate={euroInrRate}
           getGoalAmountInCurrency={getGoalAmountInCurrency}
@@ -69,7 +70,6 @@ const Dashboard = ({
             currencySymbol="$"
             delta="+8.2% this month"
             deltaPositive={true}
-            lastUpdated="2 hours ago"
             fxNote="1 USD = ₹83.25"
             icons={<DollarSign className="h-6 w-6 text-white" />}
             badgeGradient={["#fbbf24", "#f59e0b"]}
@@ -78,16 +78,16 @@ const Dashboard = ({
           />
 
           <InvestmentCard
-            title="Euro Investments"
-            amount={euroInvestments}
-            currencySymbol="€"
+            title="Cash & Savings"
+            amount={cashAndSavings}
+            currencySymbol="₹"
             delta="+8.2% this month"
             deltaPositive={true}
-            lastUpdated="2 hours ago"
             fxNote="1 USD = ₹83.25"
-            icons={<Euro className="h-6 w-6 text-white" />}
+            icons={<PiggyBank className="h-6 w-6 text-white" />}
             badgeGradient={["#34d399", "#10b981"]}  
             amountLocale="en-US"
+            onClick={() => setActiveTab('Cash & Savings')} 
           />
 
           <InvestmentCard
@@ -99,7 +99,6 @@ const Dashboard = ({
             amountLocale="en-IN"
             delta="+8.2% this month"
             deltaPositive={false}
-            lastUpdated="2 hours ago"
           />
         </div>
 

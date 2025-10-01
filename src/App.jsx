@@ -253,7 +253,7 @@ useEffect(() => {
       const investments = {
         rupee: rupeeInvestments,
         usd: usdInvestments,
-        euro: euroInvestments
+        cashAndSavings: cashAndSavings
       };
       
       const exchangeRates = {
@@ -269,7 +269,7 @@ useEffect(() => {
       
       setNetWorth(calculatedNetWorth);
     }
-  }, [rupeeInvestments, usdInvestments, euroInvestments, usdInrRate, euroInrRate, netWorthCurrency]);
+  }, [rupeeInvestments, usdInvestments, cashAndSavings, usdInrRate, euroInrRate, netWorthCurrency]);
 
   // Load initial data
   useEffect(() => {
@@ -418,7 +418,7 @@ useEffect(() => {
               setNetWorthCurrency={setNetWorthCurrency}
               rupeeInvestments={rupeeInvestments}
               usdInvestments={usdInvestments}
-              euroInvestments={euroInvestments}
+              cashAndSavings={cashAndSavings}
               usdInrRate={usdInrRate}
               euroInrRate={euroInrRate}
               getGoalAmountInCurrency={getGoalAmountInCurrency}
