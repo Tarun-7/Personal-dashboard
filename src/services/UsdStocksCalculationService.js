@@ -3,7 +3,7 @@ class UsdStocksCalculationService {
   static CACHE_TIMESTAMP_KEY = 'usd_stock_price_map_timestamp';
   static CACHE_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
-  static async calculateUsdStocksSummary(transactions) {
+  static async calculateUsdStocksSummary(transactions, eurInrRate = null, usdInrRate = null) {
     if (!transactions || transactions.length === 0) {
       return {
         totalInvested: 0,
@@ -37,7 +37,7 @@ class UsdStocksCalculationService {
     const uniqueSymbols = [...new Set(filteredTransactions.map(txn => txn.Symbol).filter(Boolean))];
     
     // Fetch stock prices
-    const stockPrices = await this.fetchStockPrices(uniqueSymbols);
+    const stockPrices = await this.fetchStockPrices(uniqueSymbols, eurInrRate = null, usdInrRate = null);
 
     // Process stocks data
     const stocksData = this.processStocksData(filteredTransactions, stockPrices);
@@ -59,7 +59,7 @@ class UsdStocksCalculationService {
     };
   }
 
-  static async fetchStockPrices(symbols) {
+  static async fetchStockPrices(symbols, eurInrRate = null, usdInrRate = null) {
     try {
       // Check cache first
       const cachedPrices = this.getCachedStockPrices();
@@ -81,15 +81,27 @@ class UsdStocksCalculationService {
         try {
           let price = 0;
           
-          if (symbol === 'VUAA') {
+          // ETF handling
+          if (symbol === 'VUAA' || symbol === 'ETHEEUR') {
             // Special handling for VUAA
-            const symbolForApi = `${symbol}.LON`;
+            const symbolForApi = symbol === 'VUAA' ? `${symbol}.LON` : 'CETH.DEX';
             const apiRes = await fetch(
               `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbolForApi)}&apikey=${ALPHA_VANTAGE_API_KEY}`
             );
             if (apiRes.ok) {
               const apiData = await apiRes.json();
               price = Number(apiData?.['Global Quote']?.['05. price']) || 0;
+
+              // Convert EUR to USD for CETH.DEX (ETHEEUR)
+              if (symbol === 'ETHEEUR' && price > 0 && eurInrRate && usdInrRate) {
+                // EUR to USD conversion: EUR * (EUR/INR) / (USD/INR)
+                const eurToUsdRate = eurInrRate / usdInrRate;
+                price = price * eurToUsdRate;
+                
+                console.log(`CETH.DEX conversion: EUR ${price} -> USD ${price} (EUR/INR: ${eurInrRate}, USD/INR: ${usdInrRate})`);
+              } else {
+                price = price;
+              }
             }
           } else {
             // Use Finnhub for other US stocks

@@ -4,7 +4,7 @@ const GoalProgress = ({
   netWorth,
   usdInvestments,
   rupeeInvestments,
-  euroInvestments,
+  cashAndSavings,
   goalAmount, // in INR or the used currency
   usdInrRate,
   eurInrRate,

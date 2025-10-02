@@ -11,6 +11,7 @@ import CashSavingsPage from './pages/CashSavingsPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
 import CryptoInvestments from './pages/CryptoInvestmentsPage';
 import LoadingPage from './pages/LoadingPage';
+import PageHeader from './components/PageHeader';
 
 // Import Services
 import DataLoadingService from './services/DataLoadingService';
@@ -197,7 +198,7 @@ useEffect(() => {
       try {
         updateLoadingState('usdStocks', true);
         // Import or create a UsdStocksCalculationService similar to MutualFundCalculationService
-        const summary = await UsdStocksCalculationService.calculateUsdStocksSummary(ibkrTransactions);
+        const summary = await UsdStocksCalculationService.calculateUsdStocksSummary(ibkrTransactions, euroInrRate, usdInrRate);
         setUsdStocksSummary(summary);
         setUsdInvestments(summary.totalCurrentValue);
         console.log('USD Stocks summary calculated:', summary);
@@ -252,7 +253,7 @@ useEffect(() => {
       const investments = {
         rupee: rupeeInvestments,
         usd: usdInvestments,
-        euro: euroInvestments
+        cashAndSavings: cashAndSavings
       };
       
       const exchangeRates = {
@@ -268,7 +269,7 @@ useEffect(() => {
       
       setNetWorth(calculatedNetWorth);
     }
-  }, [rupeeInvestments, usdInvestments, euroInvestments, usdInrRate, euroInrRate, netWorthCurrency]);
+  }, [rupeeInvestments, usdInvestments, cashAndSavings, usdInrRate, euroInrRate, netWorthCurrency]);
 
   // Load initial data
   useEffect(() => {
@@ -396,18 +397,16 @@ useEffect(() => {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 pb-0">
-          <div className="flex items-center">
-            {!sidebarOpen && (
-              <button
-                className="mr-4 bg-gray-800 rounded-lg p-2 hover:bg-gray-700 transition-colors"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Open Sidebar"
-              >
-                <Menu size={20} className="text-white" />
-              </button>
-            )}
-          </div>
+        <div className="flex items-center p-6 pb-0">
+          {!sidebarOpen && (
+            <button
+              className="mr-4 bg-gray-800 rounded-lg p-2 hover:bg-gray-700 transition-colors"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open Sidebar"
+            >
+              <Menu size={20} className="text-white" />
+            </button>
+          )}
         </div>
 
         <div className="p-6">
@@ -419,7 +418,7 @@ useEffect(() => {
               setNetWorthCurrency={setNetWorthCurrency}
               rupeeInvestments={rupeeInvestments}
               usdInvestments={usdInvestments}
-              euroInvestments={euroInvestments}
+              cashAndSavings={cashAndSavings}
               usdInrRate={usdInrRate}
               euroInrRate={euroInrRate}
               getGoalAmountInCurrency={getGoalAmountInCurrency}

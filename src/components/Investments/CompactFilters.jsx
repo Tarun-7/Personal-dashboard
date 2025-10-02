@@ -15,7 +15,7 @@ const CompactFilters = ({
       <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 sm:gap-4">
         
         {/* Search Section */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 w-full lg:w-auto">
           <div className="relative group">
             <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" size={18} />
             <input
@@ -37,52 +37,49 @@ const CompactFilters = ({
         </div>
 
         {/* Filter Section */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          
+        <div className="w-full lg:w-auto">
           {/* Filter Buttons */}
-          <div className="flex bg-slate-800/60 backdrop-blur-sm rounded-xl p-1.5 border border-slate-600/30 shadow-inner">
+          <div className="flex flex-wrap bg-slate-800/60 backdrop-blur-sm rounded-xl p-1.5 border border-slate-600/30 shadow-inner gap-1">
             <button
               onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'all' })}
-              className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+              className={`relative px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 flex-1 sm:flex-initial justify-center min-w-0 ${
                 state.filterBy === 'all'
                   ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 transform scale-105'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <div className={`w-2 h-2 rounded-full ${
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 state.filterBy === 'all' ? 'bg-white/80' : 'bg-slate-500'
               }`}></div>
-              All Stocks
+              <span className="whitespace-nowrap">All Stocks</span>
               {state.filterBy === 'all' && (
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-blue-600/20 animate-pulse"></div>
               )}
             </button>
-            
             <button
               onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'profit' })}
-              className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+              className={`relative px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 flex-1 sm:flex-initial justify-center min-w-0 ${
                 state.filterBy === 'profit'
                   ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 transform scale-105'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <TrendingUp size={14} className={state.filterBy === 'profit' ? 'text-white' : 'text-emerald-400'} />
-              Profitable
+              <TrendingUp size={14} className={`flex-shrink-0 ${state.filterBy === 'profit' ? 'text-white' : 'text-emerald-400'}`} />
+              <span className="whitespace-nowrap">Profitable</span>
               {state.filterBy === 'profit' && (
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/20 to-green-600/20 animate-pulse"></div>
               )}
             </button>
-            
             <button
               onClick={() => dispatch({ type: ACTIONS.SET_FILTER, payload: 'loss' })}
-              className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+              className={`relative px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 flex-1 sm:flex-initial justify-center min-w-0 ${
                 state.filterBy === 'loss'
                   ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/25 transform scale-105'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <TrendingDown size={14} className={state.filterBy === 'loss' ? 'text-white' : 'text-red-400'} />
-              Loss Making
+              <TrendingDown size={14} className={`flex-shrink-0 ${state.filterBy === 'loss' ? 'text-white' : 'text-red-400'}`} />
+              <span className="whitespace-nowrap">Loss Making</span>
               {state.filterBy === 'loss' && (
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-red-500/20 to-rose-600/20 animate-pulse"></div>
               )}
@@ -91,11 +88,13 @@ const CompactFilters = ({
         </div>
 
         {/* Results Counter */}
-        <div className="text-sm text-slate-400 bg-slate-800/30 px-3 py-2 rounded-lg border border-slate-600/30">
-          <span className="font-medium text-slate-300">{filteredAndSortedData.length}</span> 
-          <span className="ml-1">
-            {filteredAndSortedData.length === 1 ? resultLabelSingular : resultLabel}
-          </span>
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+          <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-500/20 to-blue-600/20 border border-blue-500/30 px-3 py-1.5 rounded-full">
+            <span className="text-sm font-bold text-blue-400">{filteredAndSortedData.length}</span>
+            <span className="text-xs text-slate-300">
+              {filteredAndSortedData.length === 1 ? resultLabelSingular : resultLabel}
+            </span>
+          </div>
         </div>
 
       </div>

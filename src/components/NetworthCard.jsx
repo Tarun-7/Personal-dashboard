@@ -10,7 +10,7 @@ const NetWorthCard = ({
   setNetWorthCurrency = () => {},
   rupeeInvestments = 4486866,
   usdInvestments = 10133,
-  euroInvestments = 7000,
+  cashAndSavings = 0,
   usdInrRate = 83.25,
   euroInrRate = 90.50,
   getGoalAmountInCurrency = () => 10000000,
@@ -300,7 +300,7 @@ const NetWorthCard = ({
             netWorth={netWorth}
             usdInvestments={usdInvestments}
             rupeeInvestments={rupeeInvestments}
-            euroInvestments={euroInvestments}
+            cashAndSavings={cashAndSavings}
             goalAmount={goalInCurrency} // converted goal in INR or base currency
             usdInrRate={usdInrRate}
             euroInrRate={euroInrRate}

@@ -6,6 +6,7 @@ import SummaryCard from '../../components/SummaryCard';
 import CompactFilters from '../../components/Investments/CompactFilters';
 import TransactionDetails from '../../components/Investments/TransactionDetails';
 import PortfolioTable from '../../components/Investments/PortfolioTable';
+import PageHeader from '../../components/PageHeader';
 
 // Symbol Badge Component
 const SymbolBadge = ({ symbol }) => {
@@ -282,39 +283,23 @@ const UsdStocksDashboard = ({
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-                USD Stocks Portfolio
-              </h1>
-              <p className="text-gray-400">Track your USD equity investments and performance</p>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <button
-                onClick={exportToCSV}
-                disabled={transactions.length === 0}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  transactions.length === 0
-                    ? 'bg-slate-600 text-slate-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl'
-                }`}
-                title="Export USD stocks data to CSV"
-              >
-                <Download size={20} />
-                Export
-              </button>
-
-              <button
-                // onClick={() => setShowBalance(!showBalance)}
-                className="p-3 bg-gray-800 rounded-xl hover:bg-gray-700 transition-colors"
-              >
-                {true ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="USD Stocks Portfolio"
+          description="Track your USD equity investments and performance"
+          showEyeToggle={true}
+          showBalance={true}
+          onEyeToggle={() => {}} // No-op since it's disabled
+          buttons={[    
+            {
+              label: "Export",
+              icon: Download,
+              onClick: exportToCSV,
+              disabled: transactions.length === 0,
+              variant: "success",
+              title: "Export USD stocks data to CSV"
+            }
+          ]}
+        />
 
         {/* Summary Cards - Improved responsive layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Check, FileText, Upload, CloudUpload, AlertCircle, Info, X } from 'lucide-react';
 import KuveraImg from '../assets/kuvera.png';
 import IbkrImg from '../assets/ibkr.jpg';
+import PageHeader from '../components/PageHeader';
 
 const UploadPage = ({
   uploadedFiles = {},
@@ -127,12 +128,14 @@ const UploadPage = ({
         }} />
         
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
-            Upload Transaction Files
-          </h1>
-          <p className="text-gray-400 text-lg">Upload CSV files from your brokers to automatically track your investments</p>
-        </div>
+        <PageHeader
+          title="Upload Transaction Files"
+          description="Upload CSV files from your brokers to automatically track your investments"
+          showEyeToggle={false}
+          showBalance={false}
+          onEyeToggle={() => {}} // No-op since it's disabled
+          buttons={[]}
+        />
 
         {/* Upload Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
