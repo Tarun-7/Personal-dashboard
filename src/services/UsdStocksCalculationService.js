@@ -84,7 +84,7 @@ class UsdStocksCalculationService {
           // ETF handling
           if (symbol === 'VUAA' || symbol === 'ETHEEUR') {
             // Special handling for VUAA
-            const symbolForApi = symbol === 'VUAA' ? `${symbol}.LON` : 'CETH.DEX';
+            const symbolForApi = symbol === 'VUAA' ? `${symbol}.LON` : 'CETH.FRK';
             const apiRes = await fetch(
               `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbolForApi)}&apikey=${ALPHA_VANTAGE_API_KEY}`
             );
