@@ -205,9 +205,8 @@ class UsdStocksCalculationService {
       const date = new Date(dateStr.replace(';', ' '));
       if (isNaN(date.getTime())) return;
 
-      const tradeMoney = parseFloat(txn.TradeMoney) || 0;
-      const ibCommission = parseFloat(txn.IBCommission) || 0;
-      const cashFlow = tradeMoney + ibCommission;
+      // FIX: Use NetCash directly, which has the correct sign
+      const cashFlow = parseFloat(txn.NetCash) || 0;
 
       if (cashFlow !== 0) {
         cashFlows.push(cashFlow);
@@ -263,6 +262,7 @@ class UsdStocksCalculationService {
 
     return 0;
   }
+
 
   static getCachedStockPrices() {
     try {

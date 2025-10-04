@@ -359,7 +359,7 @@ const UsdStocksDashboard = ({
           dispatch={dispatch}
           ACTIONS={ACTIONS}
           filteredAndSortedData={filteredAndSortedData}
-          searchPlaceholder="Search by symbol or company name..."
+          searchPlaceholder="Search by symbol or company..."
           resultLabel="stocks"
           resultLabelSingular="stock"
         />
