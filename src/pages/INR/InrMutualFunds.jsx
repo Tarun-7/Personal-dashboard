@@ -350,7 +350,7 @@ const InrMutualFunds = ({ transactions = [], mutualFundSummary = {} }) => {
           dispatch={dispatch}
           ACTIONS={ACTIONS}
           filteredAndSortedData={filteredAndSortedData}
-          searchPlaceholder="Search by Fund or company name..."
+          searchPlaceholder="Search by Fund..."
           resultLabel="Funds"
           resultLabelSingular="Fund"
         />

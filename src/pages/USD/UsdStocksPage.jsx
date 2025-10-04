@@ -61,7 +61,7 @@ const UsdStocksDashboard = ({
   const [state, dispatch] = useReducer(stocksReducer, initialState);
   const [selectedStock, setSelectedStock] = useState('');
   const [showTransactions, setShowTransactions] = useState(false);
-  const [returnType, setReturnType] = useState('absolute');
+  const [returnType, setReturnType] = useState('xirr');
 
   // Use pre-calculated data from usdStocksSummary prop
   const processedData = useMemo(() => {
@@ -359,9 +359,9 @@ const UsdStocksDashboard = ({
           dispatch={dispatch}
           ACTIONS={ACTIONS}
           filteredAndSortedData={filteredAndSortedData}
-          searchPlaceholder="Search by symbol or company name..."
-          resultLabel="stocks"
-          resultLabelSingular="stock"
+          searchPlaceholder="Search by symbol or company..."
+          resultLabel="Stocks"
+          resultLabelSingular="Stock"
         />
 
         {/* Loading State */}

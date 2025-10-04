@@ -84,7 +84,7 @@ class UsdStocksCalculationService {
           // ETF handling
           if (symbol === 'VUAA' || symbol === 'ETHEEUR') {
             // Special handling for VUAA
-            const symbolForApi = symbol === 'VUAA' ? `${symbol}.LON` : 'CETH.DEX';
+            const symbolForApi = symbol === 'VUAA' ? `${symbol}.LON` : 'CETH.FRK';
             const apiRes = await fetch(
               `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbolForApi)}&apikey=${ALPHA_VANTAGE_API_KEY}`
             );
@@ -205,9 +205,8 @@ class UsdStocksCalculationService {
       const date = new Date(dateStr.replace(';', ' '));
       if (isNaN(date.getTime())) return;
 
-      const tradeMoney = parseFloat(txn.TradeMoney) || 0;
-      const ibCommission = parseFloat(txn.IBCommission) || 0;
-      const cashFlow = tradeMoney + ibCommission;
+      // FIX: Use NetCash directly, which has the correct sign
+      const cashFlow = parseFloat(txn.NetCash) || 0;
 
       if (cashFlow !== 0) {
         cashFlows.push(cashFlow);
@@ -263,6 +262,7 @@ class UsdStocksCalculationService {
 
     return 0;
   }
+
 
   static getCachedStockPrices() {
     try {

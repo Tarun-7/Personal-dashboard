@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Percent, Plus, IndianRupee, Euro, TrendingUp, TrendingDown, PieChart, BarChart3, Activity, Target, Calendar, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield, Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard, Download } from 'lucide-react';
+import { Percent, Plus, IndianRupee, Euro, TrendingUp, ChevronDown, PieChart, ChevronUp, Activity, Target, Calendar, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield, Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard, Download } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Area, AreaChart } from 'recharts';
 import LoadingScreen from '../components/LoadingScreen';
 import SavingsCalculationService from '../services/SavingsCalculationService';
 import SummaryCard from '../components/SummaryCard';
+import PageHeader from '../components/PageHeader';
+import GoalProgress from '../components/GoalProgress';
 
 const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83, euroInrRate = 91 }) => {
   // Add selected currency state
@@ -21,6 +23,7 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
     description: '',
     currency: 'INR' // Add currency field
   });
+  const [expandedRows, setExpandedRows] = useState(new Set());
 
   const cashSavingsData = savingsSummary.savingsData || [];
   const loading = false;
@@ -87,6 +90,11 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
     { month: 'Nov', amount: 1150000 },
     { month: 'Dec', amount: 1155000 }
   ];
+
+  let symbolForYourCurrency = '₹';
+  if (selectedCurrency === 'INR') symbolForYourCurrency = '₹';
+  else if (selectedCurrency === 'USD') symbolForYourCurrency = '$';
+  else if (selectedCurrency === 'EUR') symbolForYourCurrency = '€';
 
   // Enhanced formatting functions with currency support
   const formatCurrency = useCallback((amount, fromCurrency = 'INR') => {
@@ -232,6 +240,16 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
     return accountType ? accountType.icon : Building2;
   };
 
+  const toggleRowExpansion = (id) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedRows(newExpanded);
+  };
+
   // Keep all the existing UI exactly the same - just show error if needed
   if (error) {
     return (
@@ -254,47 +272,30 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-                Cash Savings
-              </h1>
-              <p className="text-gray-400">Manage your cash, savings accounts, and fixed deposits</p>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleAddNew}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                <Plus size={20} />
-                New
-              </button>
 
-              <button
-                onClick={handleExportData}
-                disabled={cashSavingsData.length === 0}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  cashSavingsData.length === 0 
-                    ? 'bg-slate-600 text-slate-500 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-700 rounded-xl text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl'
-                }`}
-                title="Export savings data to JSON"
-              >
-                <Download size={20} />
-                Export
-              </button>
-
-              <button
-                onClick={() => setShowBalance(!showBalance)}
-                className="p-3 bg-gray-800 rounded-xl hover:bg-gray-700 transition-colors"
-              >
-                {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="Cash Savings"
+          description="Manage your cash, savings accounts, and fixed deposits"
+          showEyeToggle={true}
+          onEyeToggle={() => setShowBalance(!showBalance)} // No-op since it's disabled
+          buttons={[  
+            {
+              label: "New",
+              icon: Plus,
+              onClick: handleAddNew,
+              variant: "primary",
+              title: "New Savings Account or Fixed Deposit"
+            },  
+            {
+              label: "Export",
+              icon: Download,
+              onClick: handleExportData,
+              disabled: cashSavingsData.length === 0,
+              variant: "success",
+              title: "Export savings data to JSON"
+            }
+          ]}
+        />
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -345,70 +346,81 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
 
         {/* Accounts List */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden shadow-2xl mb-8">
-        <div className="p-6 border-b border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Building2 className="w-6 h-6" />
-            Your Accounts ({selectedCurrency})
-          </h3>
-          
-          <div className="flex flex-col items-center">
-            <button
-              onClick={() => setSelectedCurrency(prev =>
-                prev === 'INR' ? 'USD' : prev === 'USD' ? 'EUR' : 'INR'
-              )}
-              className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 transform hover:scale-110 cursor-pointer group ${
-                selectedCurrency === 'INR'
-                  ? 'bg-gradient-to-br from-orange-400 to-orange-500 shadow-orange-500/25'
-                  : selectedCurrency === 'USD'
-                    ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/25'
-                    : 'bg-gradient-to-br from-blue-400 to-blue-500 shadow-blue-500/25'
-              } shadow-lg hover:shadow-xl`}
-              title={`Switch to ${selectedCurrency === 'INR' ? 'USD' : selectedCurrency === 'USD' ? 'EUR' : 'INR'}`}
-            >
-              {/* Subtle pulsing ring animation */}
-              <div className={`absolute -inset-1 rounded-full animate-pulse opacity-10 ${
-                selectedCurrency === 'INR'
-                  ? 'bg-orange-400'
-                  : selectedCurrency === 'USD'
-                    ? 'bg-emerald-400'
-                    : 'bg-blue-400'
-              }`}></div>
+          {/* Header */}
+          <div className="p-4 sm:p-6 border-b border-gray-700">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="hidden sm:inline">Your Accounts ({selectedCurrency})</span>
+                <span className="sm:hidden">Accounts</span>
+              </h3>
               
-              {/* Static ring for depth */}
-              <div className={`absolute inset-0 rounded-full ring-2 ${
-                selectedCurrency === 'INR'
-                  ? 'ring-orange-300/30'
-                  : selectedCurrency === 'USD'
-                    ? 'ring-emerald-300/30'
-                    : 'ring-blue-300/30'
-              }`}></div>
-              
-              {/* Currency icon */}
-              <div className="relative z-10">
-                {selectedCurrency === 'INR' && <IndianRupee className="w-4 h-4 text-white drop-shadow-sm" />}
-                {selectedCurrency === 'USD' && <DollarSign className="w-4 h-4 text-white drop-shadow-sm" />}
-                {selectedCurrency === 'EUR' && <Euro className="w-4 h-4 text-white drop-shadow-sm" />}
+              {/* Currency Switcher */}
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium transition-colors duration-500 ${
+                  selectedCurrency === 'INR'
+                    ? 'text-orange-300'
+                    : selectedCurrency === 'USD'
+                      ? 'text-emerald-300'
+                      : 'text-blue-300'
+                } sm:hidden`}>
+                  {selectedCurrency}
+                </span>
+                <button
+                  onClick={() => setSelectedCurrency(prev =>
+                    prev === 'INR' ? 'USD' : prev === 'USD' ? 'EUR' : 'INR'
+                  )}
+                  className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 transform hover:scale-110 cursor-pointer group ${
+                    selectedCurrency === 'INR'
+                      ? 'bg-gradient-to-br from-orange-400 to-orange-500 shadow-orange-500/25'
+                      : selectedCurrency === 'USD'
+                        ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/25'
+                        : 'bg-gradient-to-br from-blue-400 to-blue-500 shadow-blue-500/25'
+                  } shadow-lg hover:shadow-xl`}
+                >
+                  <div className={`absolute -inset-1 rounded-full animate-pulse opacity-10 ${
+                    selectedCurrency === 'INR'
+                      ? 'bg-orange-400'
+                      : selectedCurrency === 'USD'
+                        ? 'bg-emerald-400'
+                        : 'bg-blue-400'
+                  }`}></div>
+                  
+                  <div className={`absolute inset-0 rounded-full ring-2 ${
+                    selectedCurrency === 'INR'
+                      ? 'ring-orange-300/30'
+                      : selectedCurrency === 'USD'
+                        ? 'ring-emerald-300/30'
+                        : 'ring-blue-300/30'
+                  }`}></div>
+                  
+                  <div className="relative z-10">
+                    {selectedCurrency === 'INR' && <IndianRupee className="w-4 h-4 text-white drop-shadow-sm" />}
+                    {selectedCurrency === 'USD' && <DollarSign className="w-4 h-4 text-white drop-shadow-sm" />}
+                    {selectedCurrency === 'EUR' && <Euro className="w-4 h-4 text-white drop-shadow-sm" />}
+                  </div>
+                  
+                  <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </button>
               </div>
-              
-              {/* Hover overlay */}
-              <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </button>
+            </div>
             
-            {/* Tap to switch label */}
-            <span className={`text-xs font-medium mt-2 animate-pulse transition-colors duration-500 text-center ${
-              selectedCurrency === 'INR'
-                ? 'text-orange-300'
-                : selectedCurrency === 'USD'
-                  ? 'text-emerald-300'
-                  : 'text-blue-300'
-            }`}>
-              Tap to switch
-            </span>
+            {/* Currency switcher hint - desktop only */}
+            <div className="hidden sm:flex justify-end mt-2">
+              <span className={`text-xs font-medium animate-pulse transition-colors duration-500 ${
+                selectedCurrency === 'INR'
+                  ? 'text-orange-300'
+                  : selectedCurrency === 'USD'
+                    ? 'text-emerald-300'
+                    : 'text-blue-300'
+              }`}>
+                Switch currency
+              </span>
+            </div>
           </div>
-        </div>
 
-
-          <div className="overflow-x-auto">
+          {/* Desktop Table (hidden on mobile) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-800">
                 <tr>
@@ -523,21 +535,132 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
             </table>
           </div>
 
-          {cashSavingsData.length === 0 && (
-            <div className="p-12 text-center">
-              <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Building2 className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">No Accounts Added</h3>
-              <p className="text-gray-400 mb-6">Start by adding your first savings account or fixed deposit</p>
-              <button
-                onClick={handleAddNew}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl text-white font-medium transition-colors"
-              >
-                Add Your First Account
-              </button>
-            </div>
-          )}
+          {/* Mobile Cards (visible only on mobile) */}
+          <div className="md:hidden">
+            {cashSavingsData.map((item) => {
+              const IconComponent = getTypeIcon(item.type);
+              const daysToMaturity = getDaysToMaturity(item.maturityDate);
+              const isExpanded = expandedRows.has(item.id);
+              
+              return (
+                <div
+                  key={item.id}
+                  className="border-t border-gray-700 hover:bg-gray-700/20 transition-all"
+                >
+                  {/* Card Header - Always Visible */}
+                  <div 
+                    className="p-4 cursor-pointer"
+                    onClick={() => toggleRowExpansion(item.id)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{
+                            backgroundColor: `${item.color}20`,
+                            border: `1px solid ${item.color}30`
+                          }}
+                        >
+                          <IconComponent
+                            className="w-5 h-5"
+                            style={{ color: item.color }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-white font-medium">{item.accountName}</p>
+                            <span
+                              className="px-2 py-0.5 rounded text-xs font-medium"
+                              style={{
+                                backgroundColor: `${item.color}20`,
+                                color: item.color
+                              }}
+                            >
+                              {item.type}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-400 mt-0.5">{item.bankName}</p>
+                          <div className="text-white font-semibold mt-2">
+                            {formatCurrency(item.amount, item.currency || 'INR')}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3 text-green-400" />
+                          <span className="text-green-400 text-sm font-medium">{item.interestRate.toFixed(1)}%</span>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Details */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 space-y-3 animate-in slide-in-from-top-2">
+                      {item.description && (
+                        <div className="text-sm text-gray-400">
+                          {item.description}
+                        </div>
+                      )}
+                      
+                      {item.currency && item.currency !== selectedCurrency && (
+                        <div className="text-sm text-gray-500">
+                          Original: {item.currency} {item.amount.toLocaleString()}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-gray-500">Maturity</p>
+                          {item.maturityDate ? (
+                            <div>
+                              <p className="text-white text-sm">{formatDate(item.maturityDate)}</p>
+                              {daysToMaturity !== null && (
+                                <p className={`text-xs ${
+                                  daysToMaturity > 30 ? 'text-gray-400' : 
+                                  daysToMaturity > 0 ? 'text-yellow-400' : 'text-red-400'
+                                }`}>
+                                  {daysToMaturity > 0 ? `${daysToMaturity} days left` : 'Matured'}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">No maturity</span>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(item);
+                            }}
+                            className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg hover:bg-blue-600/30 transition-colors"
+                          >
+                            <Edit className="w-4 h-4 text-blue-400" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(item.id);
+                            }}
+                            className="p-2 bg-red-600/20 border border-red-500/30 rounded-lg hover:bg-red-600/30 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-400" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Charts Row */}
@@ -594,43 +717,16 @@ const CashSavingsPage = ({ savingsSummary = {}, onSavingsUpdate, usdInrRate = 83
 
           {/* Growth Chart */}
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-6 shadow-2xl">
-            <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Monthly Growth
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlyData}>
-                <defs>
-                  <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#9CA3AF" />
-                <YAxis
-                  stroke="#9CA3AF"
-                  tickFormatter={(value) => `₹${(value / 100000).toFixed(0)}L`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#1f2937',
-                    border: '1px solid #374151',
-                    borderRadius: '8px',
-                    color: '#fff'
-                  }}
-                  formatter={(value) => [formatCurrency(value), 'Total Amount']}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="amount"
-                  stroke="#3B82F6"
-                  fillOpacity={1}
-                  fill="url(#colorAmount)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <GoalProgress
+              netWorth={analytics.totalAmount}
+              usdInvestments={0}
+              rupeeInvestments={0}
+              cashAndSavings={analytics.totalAmount}
+              goalAmount={100000} // converted goal in INR or base currency
+              usdInrRate={usdInrRate}
+              euroInrRate={euroInrRate}
+              netWorthCurrencySymbol={symbolForYourCurrency}
+            />
           </div>
         </div>
 
