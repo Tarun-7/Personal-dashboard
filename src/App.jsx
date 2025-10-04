@@ -12,6 +12,8 @@ import UsdStocksPage from './pages/USD/UsdStocksPage';
 import CryptoInvestments from './pages/CryptoInvestmentsPage';
 import LoadingPage from './pages/LoadingPage';
 import PageHeader from './components/PageHeader';
+import FloatingDock from './components/FloatingDock';
+
 
 // Import Services
 import DataLoadingService from './services/DataLoadingService';
@@ -399,13 +401,21 @@ useEffect(() => {
         {/* Header */}
         <div className="flex items-center p-6 pb-0">
           {!sidebarOpen && (
-            <button
-              className="mr-4 bg-gray-800 rounded-lg p-2 hover:bg-gray-700 transition-colors"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open Sidebar"
-            >
-              <Menu size={20} className="text-white" />
-            </button>
+            <>
+              <button
+                className="mr-4 bg-gray-800 rounded-lg p-2 hover:bg-gray-700 transition-colors"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open Sidebar"
+              >
+                <Menu size={20} className="text-white" />
+              </button>
+              <FloatingDock 
+                activeTab={activeTab} 
+                setActiveTab={setActiveTab}
+                sidebarOpen={sidebarOpen}
+                topbar
+              />
+            </>
           )}
         </div>
 
