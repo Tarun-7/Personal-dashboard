@@ -241,7 +241,7 @@ const NetWorthCard = ({
                 <div className="flex justify-between items-end gap-4 px-4 lg:px-8">
                   {/* Total Invested - Left */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center mb-1.5 sm:mb-2 ml-4">
+                    <div className="flex items-center mb-1.5 sm:mb-2">
                       <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 mr-2"></div>
                       <span className="text-xs text-slate-400 font-medium">INVESTED</span>
                     </div>
