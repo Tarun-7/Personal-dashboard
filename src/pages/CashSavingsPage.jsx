@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Percent, Plus, IndianRupee, Euro, TrendingUp, ChevronDown, PieChart, BarChart3, Activity, Target, Calendar, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield, Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard, Download } from 'lucide-react';
+import { Percent, Plus, IndianRupee, Euro, TrendingUp, ChevronDown, PieChart, ChevronUp, Activity, Target, Calendar, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Building2, Shield, Clock, Edit, Trash2, X, Check, AlertCircle, CreditCard, Download } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Area, AreaChart } from 'recharts';
 import LoadingScreen from '../components/LoadingScreen';
 import SavingsCalculationService from '../services/SavingsCalculationService';
