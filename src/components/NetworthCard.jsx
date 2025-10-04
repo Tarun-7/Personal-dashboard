@@ -123,7 +123,7 @@ const NetWorthCard = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 p-3 sm:p-6">
+    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 p-2 sm:p-6">
       {/* Net Worth Card - Left Half */}
       <div className="flex-1">
         <div 
