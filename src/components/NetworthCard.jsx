@@ -123,7 +123,7 @@ const NetWorthCard = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 p-2 sm:p-6">
+    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 sm:p-6">
       {/* Net Worth Card - Left Half */}
       <div className="flex-1">
         <div 
@@ -171,108 +171,15 @@ const NetWorthCard = ({
           
           {/* Content */}
           <div className="relative z-10 p-4 sm:p-6 lg:p-8">
-            <div className="flex items-start justify-between gap-3">
-              
-              {/* Left: Title, Amount and Metrics */}
-              <div className="flex-1 min-w-0">
-                {/* Title */}
-                <div className="mb-4 sm:mb-8 lg:mb-10">
-                  <h3 className="text-sm sm:text-base lg:text-lg font-medium text-slate-300">
-                    Total Net Worth
-                  </h3>
-                </div>
-
-                {/* Main Amount */}
-                <div className="mb-6 sm:mb-8 lg:mb-10 text-center lg:text-center">
-                  <div className="flex items-baseline justify-center mb-3 sm:mb-4 lg:mb-5">
-                    <span 
-                      className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 flex-shrink-0"
-                      style={{ color: colors.primary }}
-                    >
-                      {symbolForYourCurrency}
-                    </span>
-                    <span 
-                      className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight"
-                      style={{
-                        background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                      }}
-                    >
-                      {netWorth.toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
-                    </span>
-                  </div>
-                  
-                  {/* Performance badge */}
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    <div
-                      className="inline-flex items-center rounded-lg px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium backdrop-blur-sm border transition-all duration-300"
-                      style={{
-                        background: `linear-gradient(135deg, ${colors.glow} 0%, ${colors.glow} 100%)`,
-                        borderColor: `${colors.primary}50`,
-                        color: colors.primary,
-                        boxShadow: `0 3px 8px ${colors.glow}`
-                      }}
-                    >
-                      <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      +12.5% this month
-                    </div>
-
-                    {/* Exchange Rate Badge */}
-                    {netWorthCurrency !== 'INR' && (
-                      <div
-                        className="inline-flex items-center rounded-lg px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium backdrop-blur-sm border"
-                        style={{
-                          background: `linear-gradient(135deg, ${colors.glow} 0%, ${colors.glow} 100%)`,
-                          borderColor: `${colors.primary}50`,
-                          color: colors.primary,
-                          boxShadow: `0 3px 8px ${colors.glow}`
-                        }}
-                      >
-                        1 {netWorthCurrency} = ₹{netWorthCurrency === 'USD' ? usdInrRate.toFixed(2) : euroInrRate.toFixed(2)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Invested vs Gains/Loss */}
-                <div className="flex justify-between items-end gap-4 px-4 lg:px-8">
-                  {/* Total Invested - Left */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center mb-1.5 sm:mb-2">
-                      <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 mr-2"></div>
-                      <span className="text-xs text-slate-400 font-medium">INVESTED</span>
-                    </div>
-                    <div className="text-blue-300 font-bold text-lg sm:text-xl lg:text-2xl">
-                      {symbolForYourCurrency} {formatAmount(convertedTotalInvested)}
-                    </div>
-                  </div>
-                  
-                  {/* Gains/Loss - Right */}
-                  <div className="min-w-0 flex-1 text-right">
-                    <div className="flex items-center justify-end mb-1.5 sm:mb-2 mr-4">
-                        <div 
-                        className="w-2 h-2 rounded-full"
-                        style={{ 
-                          background: isGain 
-                            ? 'linear-gradient(to right, #10b981, #059669)' 
-                            : 'linear-gradient(to right, #ef4444, #dc2626)' 
-                        }}
-                      ></div>
-                      <span className="text-xs text-slate-400 font-medium ml-2">
-                        {isGain ? 'GAINS' : 'LOSS'}
-                      </span>
-                    </div>
-                    <div className={`font-bold text-lg sm:text-xl lg:text-2xl ${gainsLossTextColor}`}>
-                      {symbolForYourCurrency} {formatAmount(convertedTotalGainsLoss)}
-                    </div>
-                  </div>
-                </div>
+            {/* Title and Currency Switcher Row */}
+            <div className="flex items-start justify-between gap-3 mb-4 sm:mb-6">
+              <div className="flex-1">
+                <h3 className="text-sm sm:text-base lg:text-lg font-medium text-slate-300">
+                  Total Net Worth
+                </h3>
               </div>
-
-              {/* Right: Currency Switcher */}
+              
+              {/* Currency Switcher */}
               <div className="flex flex-col items-center flex-shrink-0">
                 <div className="relative">
                   {/* Glow effect */}
@@ -313,19 +220,106 @@ const NetWorthCard = ({
                 </span>
               </div>
             </div>
+
+            {/* Main Amount */}
+            <div className="mb-6 sm:mb-8 lg:mb-10 text-center">
+              <div className="flex items-baseline justify-center mb-3 sm:mb-4 lg:mb-5">
+                <span 
+                  className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 flex-shrink-0"
+                  style={{ color: colors.primary }}
+                >
+                  {symbolForYourCurrency}
+                </span>
+                <span 
+                  className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight"
+                  style={{
+                    background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  {netWorth.toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              
+              {/* Performance badge */}
+              <div className="flex flex-wrap gap-2 justify-center">
+                <div
+                  className="inline-flex items-center rounded-lg px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium backdrop-blur-sm border transition-all duration-300"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.glow} 0%, ${colors.glow} 100%)`,
+                    borderColor: `${colors.primary}50`,
+                    color: colors.primary,
+                    boxShadow: `0 3px 8px ${colors.glow}`
+                  }}
+                >
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  +12.5% this month
+                </div>
+
+                {/* Exchange Rate Badge */}
+                {netWorthCurrency !== 'INR' && (
+                  <div
+                    className="inline-flex items-center rounded-lg px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium backdrop-blur-sm border"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.glow} 0%, ${colors.glow} 100%)`,
+                      borderColor: `${colors.primary}50`,
+                      color: colors.primary,
+                      boxShadow: `0 3px 8px ${colors.glow}`
+                    }}
+                  >
+                    1 {netWorthCurrency} = ₹{netWorthCurrency === 'USD' ? usdInrRate.toFixed(2) : euroInrRate.toFixed(2)}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Invested vs Gains/Loss - Stacked on mobile, side by side on larger screens */}
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end gap-4 sm:gap-6 px-2 sm:px-4 lg:px-8">
+              {/* Total Invested */}
+              <div className="flex-1 flex flex-col items-center sm:items-start">
+                <div className="flex items-center mb-1.5 sm:mb-2">
+                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 mr-2"></div>
+                  <span className="text-xs text-slate-400 font-medium">INVESTED</span>
+                </div>
+                <div className="text-blue-300 font-bold text-lg sm:text-xl lg:text-2xl break-words">
+                  {symbolForYourCurrency} {formatAmount(convertedTotalInvested)}
+                </div>
+              </div>
+              
+              {/* Gains/Loss */}
+              <div className="flex-1 flex flex-col items-center sm:items-end">
+                <div className="flex items-center mb-1.5 sm:mb-2">
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ 
+                      background: isGain 
+                        ? 'linear-gradient(to right, #10b981, #059669)' 
+                        : 'linear-gradient(to right, #ef4444, #dc2626)' 
+                    }}
+                  ></div>
+                  <span className="text-xs text-slate-400 font-medium ml-2">
+                    {isGain ? 'GAINS' : 'LOSS'}
+                  </span>
+                </div>
+                <div className={`font-bold text-lg sm:text-xl lg:text-2xl break-words ${gainsLossTextColor}`}>
+                  {symbolForYourCurrency} {formatAmount(convertedTotalGainsLoss)}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
 
       {/* Goal Circle - Right Half */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         { usdInrRate && euroInrRate ? (
           <GoalProgress
-            netWorth={netWorth}
-            usdInvestments={usdInvestments}
-            rupeeInvestments={rupeeInvestments}
-            cashAndSavings={cashAndSavings}
-            goalAmount={goalInCurrency} // converted goal in INR or base currency
+            currentProgress={netWorth} // current net worth
+            goal={{ amount: 10000000, deadline: '2026-11-17', monthlyTarget: 200000, color: '#10b981' }}
             usdInrRate={usdInrRate}
             euroInrRate={euroInrRate}
             netWorthCurrencySymbol={symbolForYourCurrency}
