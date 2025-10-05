@@ -4,13 +4,9 @@ import GoalProgress from './GoalProgress';
 
 const NetWorthCard = ({
   netWorth,
-  totalInvested = 5436866, // New prop for total invested amount
-  totalGainsLoss = 672137, // Changed from totalCurrentValue to totalGainsLoss
+  totalInvested,
   netWorthCurrency = 'INR',
-  setNetWorthCurrency = () => {},
-  rupeeInvestments = 4486866,
-  usdInvestments = 10133,
-  cashAndSavings = 0,
+  setNetWorthCurrency,
   usdInrRate = 83.25,
   euroInrRate = 90.50,
   getGoalAmountInCurrency = () => 10000000,
@@ -64,11 +60,6 @@ const NetWorthCard = ({
     }
   };
 
-  const colors = getCurrencyColors(netWorthCurrency);
-  const isGain = totalGainsLoss >= 0;
-  const gainsLossColor = isGain ? '#10b981' : '#ef4444'; // Green for gains, red for losses
-  const gainsLossTextColor = isGain ? 'text-emerald-300' : 'text-red-300';
-
   const convertAmount = (amount, fromCurrency = 'INR', toCurrency = netWorthCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     
@@ -92,7 +83,10 @@ const NetWorthCard = ({
 
   // Convert the amounts based on current currency
   const convertedTotalInvested = convertAmount(totalInvested, 'INR', netWorthCurrency);
-  const convertedTotalGainsLoss = convertAmount(totalGainsLoss, 'INR', netWorthCurrency);
+  const convertedTotalGainsLoss = netWorth - convertedTotalInvested;
+  const colors = getCurrencyColors(netWorthCurrency);
+  const isGain = convertedTotalGainsLoss >= 0;
+  const gainsLossTextColor = isGain ? 'text-emerald-300' : 'text-red-300';
   
   const formatAmount = (amount) => {
     if (!amount || isNaN(amount)) return '0';

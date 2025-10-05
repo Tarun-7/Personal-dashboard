@@ -19,7 +19,8 @@ const Dashboard = ({
   euroInrRate,
   getGoalAmountInCurrency,
   activityData,
-  setActiveTab
+  setActiveTab,
+  totalInvested
 }) => {
   return (
     
@@ -47,6 +48,7 @@ const Dashboard = ({
           usdInrRate={usdInrRate}
           euroInrRate={euroInrRate}
           getGoalAmountInCurrency={getGoalAmountInCurrency}
+          totalInvested={totalInvested}
         />
 
         {/* Investment Cards */}

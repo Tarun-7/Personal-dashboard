@@ -429,6 +429,7 @@ useEffect(() => {
               getGoalAmountInCurrency={getGoalAmountInCurrency}
               activityData={activityData}
               setActiveTab={setActiveTab}
+              totalInvested={inrMutualFundSummary.totalInvested + usdStocksSummary.totalInvested * usdInrRate + savingsSummary.totalAmount}
             />
           )}
 
