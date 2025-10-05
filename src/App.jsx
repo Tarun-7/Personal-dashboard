@@ -48,9 +48,8 @@ const Dashboard = () => {
     kuvera: null,
     ibkr: null
   });
-  const [rupeeInvestments, setRupeeInvestments] = useState(0);
-  const [InrMfValue, setInrMfvalue] = useState(0);
   const [cashAndSavings, setCashAndSavings] = useState(0);
+  const [rupeeInvestments, setRupeeInvestments] = useState(0);
   const [inrMutualFundSummary, setInrMutualFundSummary] = useState({
     totalInvested: 0,
     totalCurrentValue: 0,
@@ -80,8 +79,8 @@ const Dashboard = () => {
   const [netWorth, setNetWorth] = useState(0);
   const [usdInrRate, setUsdInrRate] = useState(null);
   const [euroInrRate, setEuroInrRate] = useState(null);
+  const [eurUsdRate, setEurUsdRate] = useState(null);
   const [netWorthCurrency, setNetWorthCurrency] = useState('INR');
-  const [euroInvestments, setEuroInvestments] = useState(7000);  // Assuming a static value for Euro investments for now
   const [loadingStates, setLoadingStates] = useState({
     savings: true,
     mutualFunds: false,
@@ -124,11 +123,6 @@ const Dashboard = () => {
     { month: 'Dec', earning: 6, spent: 2 }
   ];
 
-  // Update rupee investments whenever mutual fund or savings values change
-  useEffect(() => {
-    setRupeeInvestments(InrMfValue + cashAndSavings);
-  }, [InrMfValue, cashAndSavings]);
-
   // Load savings data on app initialization
   useEffect(() => {
     const loadSavingsData = async () => {
@@ -169,7 +163,7 @@ const Dashboard = () => {
           updateLoadingState('mutualFunds', true);
           const summary = await MutualFundCalculationService.calculateMutualFundSummary(kuveraTransactions);
           setInrMutualFundSummary(summary);
-          setInrMfvalue(summary.totalCurrentValue);
+          setRupeeInvestments(summary.totalCurrentValue);
         } catch (error) {
           console.error('Error calculating mutual fund summary:', error);
           // Fallback to basic calculation without API data
@@ -182,6 +176,7 @@ const Dashboard = () => {
             fundsData: []
           };
           setInrMutualFundSummary(basicSummary);
+          setRupeeInvestments(basicSummary.totalCurrentValue);
         } finally {
           updateLoadingState('mutualFunds', false);
         }
@@ -200,7 +195,7 @@ useEffect(() => {
       try {
         updateLoadingState('usdStocks', true);
         // Import or create a UsdStocksCalculationService similar to MutualFundCalculationService
-        const summary = await UsdStocksCalculationService.calculateUsdStocksSummary(ibkrTransactions, euroInrRate, usdInrRate);
+        const summary = await UsdStocksCalculationService.calculateUsdStocksSummary(ibkrTransactions, eurUsdRate);
         setUsdStocksSummary(summary);
         setUsdInvestments(summary.totalCurrentValue);
         console.log('USD Stocks summary calculated:', summary);
@@ -220,13 +215,12 @@ useEffect(() => {
         updateLoadingState('usdStocks', false);
       }
     } else {
-      setUsdInvestments(0);
       updateLoadingState('usdStocks', false);
     }
   };
 
   calculateUsdStocksSummary();
-}, [ibkrTransactions]);
+}, [ibkrTransactions, eurUsdRate]);
 
 
   // Fetch exchange rates
@@ -238,6 +232,7 @@ useEffect(() => {
         if (rates.success) {
           setUsdInrRate(rates.usdInr);
           setEuroInrRate(rates.euroInr);
+          setEurUsdRate(rates.eurToUsd);
           console.log('Exchange rates loaded successfully');
         }
       } catch (error) {
@@ -434,6 +429,7 @@ useEffect(() => {
               getGoalAmountInCurrency={getGoalAmountInCurrency}
               activityData={activityData}
               setActiveTab={setActiveTab}
+              totalInvested={inrMutualFundSummary.totalInvested + usdStocksSummary.totalInvested * usdInrRate + savingsSummary.totalAmount}
             />
           )}
 
