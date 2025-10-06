@@ -40,7 +40,7 @@ class UsdStocksCalculationService {
     const stockPrices = await this.fetchStockPrices(uniqueSymbols, eurUsdRate);
 
     // Process stocks data
-    const stocksData = this.processStocksData(filteredTransactions, stockPrices);
+    const stocksData = this.processStocksData(filteredTransactions, stockPrices, eurUsdRate);
 
     // Calculate totals
     const totalInvested = stocksData.reduce((acc, stock) => acc + stock.netInvestment, 0);
@@ -133,17 +133,17 @@ class UsdStocksCalculationService {
 
   static processStocksData(transactions, stockPrices, eurUsdRate) {
     const stockMap = new Map();
+
     transactions.forEach(transaction => {
       const symbol = transaction.Symbol;
       const qty = parseFloat(transaction.Quantity) || 0;
-      // Only convert ETHEEUR transactions to USD for all calculations
       const isEtheeur = symbol === 'ETHEEUR';
-      const rate = isEtheeur ? eurUsdRate : 1;
+      const conversionRate = isEtheeur ? eurUsdRate : 1;
 
-      // All amounts for ETHEEUR are converted to USD
-      const investedAmount = (parseFloat(transaction.TradeMoney) || 0) * rate;
-      const ibCommission = (parseFloat(transaction.IBCommission) || 0) * rate;
-      const fifoPnlRealized = (parseFloat(transaction.FifoPnlRealized) || 0) * rate;
+      // Convert amounts for ETHEEUR transactions
+      const investedAmount = (parseFloat(transaction.TradeMoney) || 0) * conversionRate;
+      const ibCommission = (parseFloat(transaction.IBCommission) || 0) * conversionRate;
+      const fifoPnlRealized = (parseFloat(transaction.FifoPnlRealized) || 0) * conversionRate;
 
       if (!stockMap.has(symbol)) {
         stockMap.set(symbol, {
@@ -159,20 +159,16 @@ class UsdStocksCalculationService {
       }
 
       const stockData = stockMap.get(symbol);
-      stockData.rows.push({
-        ...transaction,
-        TradeMoney: investedAmount,
-        IBCommission: ibCommission,
-        FifoPnlRealized: fifoPnlRealized,
-        displayCurrency: isEtheeur ? 'USD' : 'EUR' // Or set conditionally as needed
-      });
+      stockData.rows.push(transaction);
       stockData.totalQuantity += qty;
       stockData.totalAmount += investedAmount;
       stockData.totalIbCommission += ibCommission;
       stockData.totalFifoPnlRealized += fifoPnlRealized;
 
       if (stockData.totalQuantity > 0) {
-        stockData.averageUnitPrice = (Math.abs(stockData.totalAmount) + stockData.totalIbCommission) / stockData.totalQuantity;
+        stockData.averageUnitPrice =
+          (Math.abs(stockData.totalAmount) + stockData.totalIbCommission) /
+          stockData.totalQuantity;
       }
     });
 
@@ -185,7 +181,8 @@ class UsdStocksCalculationService {
         const profitLoss = unrealizedGains + stock.totalFifoPnlRealized;
         const netInvestment = Math.abs(stock.totalAmount) + Math.abs(stock.totalIbCommission);
         const profitLossPercent = netInvestment > 0 ? (profitLoss / netInvestment) * 100 : 0;
-        // Optionally force displayCurrency to 'USD' for ETHEEUR here
+        const xirrPercent = this.calculateXIRR(stock.rows, totalMarketValue) * 100;
+
         return {
           ...stock,
           currentPrice,
@@ -194,12 +191,10 @@ class UsdStocksCalculationService {
           unrealizedGains,
           profitLoss,
           profitLossPercent,
-          xirrPercent: this.calculateXIRR(stock.rows, totalMarketValue) * 100,
-          displayCurrency: stock.symbol === 'ETHEEUR' ? 'USD' : 'EUR'
+          xirrPercent
         };
       });
   }
-
 
   static calculateXIRR(transactions, currentValue) {
     if (!transactions || transactions.length === 0) return 0;
