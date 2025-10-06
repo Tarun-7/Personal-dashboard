@@ -131,15 +131,19 @@ class UsdStocksCalculationService {
     }
   }
 
-  static processStocksData(transactions, stockPrices) {
+  static processStocksData(transactions, stockPrices, eurUsdRate) {
     const stockMap = new Map();
-
     transactions.forEach(transaction => {
       const symbol = transaction.Symbol;
       const qty = parseFloat(transaction.Quantity) || 0;
-      const investedAmount = parseFloat(transaction.TradeMoney) || 0;
-      const ibCommission = parseFloat(transaction.IBCommission) || 0;
-      const fifoPnlRealized = parseFloat(transaction.FifoPnlRealized) || 0;
+      // Only convert ETHEEUR transactions to USD for all calculations
+      const isEtheeur = symbol === 'ETHEEUR';
+      const rate = isEtheeur ? eurUsdRate : 1;
+
+      // All amounts for ETHEEUR are converted to USD
+      const investedAmount = (parseFloat(transaction.TradeMoney) || 0) * rate;
+      const ibCommission = (parseFloat(transaction.IBCommission) || 0) * rate;
+      const fifoPnlRealized = (parseFloat(transaction.FifoPnlRealized) || 0) * rate;
 
       if (!stockMap.has(symbol)) {
         stockMap.set(symbol, {
@@ -155,7 +159,13 @@ class UsdStocksCalculationService {
       }
 
       const stockData = stockMap.get(symbol);
-      stockData.rows.push(transaction);
+      stockData.rows.push({
+        ...transaction,
+        TradeMoney: investedAmount,
+        IBCommission: ibCommission,
+        FifoPnlRealized: fifoPnlRealized,
+        displayCurrency: isEtheeur ? 'USD' : 'EUR' // Or set conditionally as needed
+      });
       stockData.totalQuantity += qty;
       stockData.totalAmount += investedAmount;
       stockData.totalIbCommission += ibCommission;
@@ -175,8 +185,7 @@ class UsdStocksCalculationService {
         const profitLoss = unrealizedGains + stock.totalFifoPnlRealized;
         const netInvestment = Math.abs(stock.totalAmount) + Math.abs(stock.totalIbCommission);
         const profitLossPercent = netInvestment > 0 ? (profitLoss / netInvestment) * 100 : 0;
-        const xirrPercent = this.calculateXIRR(stock.rows, totalMarketValue) * 100;
-
+        // Optionally force displayCurrency to 'USD' for ETHEEUR here
         return {
           ...stock,
           currentPrice,
@@ -185,10 +194,12 @@ class UsdStocksCalculationService {
           unrealizedGains,
           profitLoss,
           profitLossPercent,
-          xirrPercent
+          xirrPercent: this.calculateXIRR(stock.rows, totalMarketValue) * 100,
+          displayCurrency: stock.symbol === 'ETHEEUR' ? 'USD' : 'EUR'
         };
       });
   }
+
 
   static calculateXIRR(transactions, currentValue) {
     if (!transactions || transactions.length === 0) return 0;
