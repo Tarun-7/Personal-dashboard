@@ -112,7 +112,7 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
   };
 
   return (
-    <div className={`h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-70'}`}>
+    <div className={`h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-65'}`}>
       <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 backdrop-blur-sm border-r border-gray-700/50 p-6 h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-8 flex-shrink-0">

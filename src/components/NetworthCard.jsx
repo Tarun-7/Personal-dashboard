@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IndianRupee, DollarSign, Euro, TrendingUp } from 'lucide-react';
 import GoalProgress from './GoalProgress';
 
@@ -11,6 +11,27 @@ const NetWorthCard = ({
   euroInrRate = 90.50,
   getGoalAmountInCurrency = () => 10000000,
 }) => {
+  const [displayedNetWorth, setDisplayedNetWorth] = useState(0);
+  
+  useEffect(() => {
+    const duration = 3000; // 3 seconds animation
+    const steps = 60;
+    const increment = netWorth / steps;
+    const stepDuration = duration / steps;
+    let currentStep = 0;
+
+    const timer = setInterval(() => {
+      currentStep++;
+      if (currentStep <= steps) {
+        setDisplayedNetWorth(Math.floor(increment * currentStep));
+      } else {
+        setDisplayedNetWorth(netWorth);
+        clearInterval(timer);
+      }
+    }, stepDuration);
+
+    return () => clearInterval(timer);
+  }, [netWorth]);
   
   const goalInCurrency = getGoalAmountInCurrency();
   let progress = 0;
@@ -234,7 +255,7 @@ const NetWorthCard = ({
                     textShadow: '0 2px 4px rgba(0,0,0,0.3)'
                   }}
                 >
-                  {netWorth.toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
+                  {displayedNetWorth.toLocaleString(netWorthCurrency === 'INR' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 })}
                 </span>
               </div>
               
