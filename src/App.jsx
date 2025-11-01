@@ -194,8 +194,17 @@ useEffect(() => {
     if (ibkrTransactions.length > 0) {
       try {
         updateLoadingState('usdStocks', true);
+        
         // Import or create a UsdStocksCalculationService similar to MutualFundCalculationService
         const summary = await UsdStocksCalculationService.calculateUsdStocksSummary(ibkrTransactions, eurUsdRate);
+
+        // Check for missing prices
+        const stocksWithoutPrices = summary.stocksData.filter(stock => stock.currentPrice === 0);
+        if (stocksWithoutPrices.length > 0) {
+            console.warn('Stocks missing price data:', stocksWithoutPrices.map(s => s.symbol));
+            // You could set a state here to display a warning in the UI
+        }
+
         setUsdStocksSummary(summary);
         setUsdInvestments(summary.totalCurrentValue);
         console.log('USD Stocks summary calculated:', summary);
