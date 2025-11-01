@@ -82,9 +82,17 @@ class UsdStocksCalculationService {
           let price = 0;
           
           // ETF handling
-          if (symbol === 'VUAA' || symbol === 'ETHEEUR') {
+          if (symbol === 'VUAA' || symbol === 'ETHEEUR' || symbol === 'EMIM') {
             // Special handling for VUAA
-            const symbolForApi = symbol === 'VUAA' ? `${symbol}.LON` : 'CETH.FRK';
+            let symbolForApi;
+
+            if (symbol === 'VUAA') {
+              symbolForApi = 'VUAA.LON';
+            } else if (symbol === 'ETHEEUR') {
+              symbolForApi = 'CETH.FRK';
+            } else if (symbol === 'EMIM') {
+              symbolForApi = 'EMIM.AMS';
+            }
             const apiRes = await fetch(
               `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbolForApi)}&apikey=${ALPHA_VANTAGE_API_KEY}`
             );
@@ -93,10 +101,10 @@ class UsdStocksCalculationService {
               price = Number(apiData?.['Global Quote']?.['05. price']) || 0;
 
               // Convert EUR to USD for CETH.DEX (ETHEEUR)
-              if (symbol === 'ETHEEUR' && price > 0 && eurUsdRate > 0) {
+              if ((symbol === 'ETHEEUR' || symbol === 'EMIM') && price > 0 && eurUsdRate > 0) {
                 const eurPrice = price;
                 price = price * eurUsdRate;
-                console.log(`CETH.FRK conversion: EUR ${eurPrice} -> USD ${price} (EUR/USD: ${eurUsdRate})`);
+                console.log(`${symbol} conversion: EUR ${eurPrice} -> USD ${price} (EUR/USD: ${eurUsdRate})`);
               } else {
                 price = price;
               }
