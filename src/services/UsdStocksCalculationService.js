@@ -82,7 +82,7 @@ class UsdStocksCalculationService {
           let price = 0;
           
           // ETF handling
-          if (symbol === 'VUAA' || symbol === 'ETHEEUR' || symbol === 'EMIM') {
+          if (symbol === 'VUAA' || symbol === 'ETHEEUR' || symbol === 'EMIM' || symbol === 'VWCG') {
             // Special handling for VUAA
             let symbolForApi;
 
@@ -92,6 +92,8 @@ class UsdStocksCalculationService {
               symbolForApi = 'CETH.FRK';
             } else if (symbol === 'EMIM') {
               symbolForApi = 'EMIM.AMS';
+            } else if (symbol === 'VWCG') {
+              symbolForApi = 'VWCG.DEX';
             }
             const apiRes = await fetch(
               `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbolForApi)}&apikey=${ALPHA_VANTAGE_API_KEY}`
