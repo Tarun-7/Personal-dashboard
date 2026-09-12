@@ -24,6 +24,7 @@ const sidebarItems = [
  },
  { name: 'Liabilities', icon: Siren },
  { name: 'Goals', icon: Goal },
+ { name: 'Net Worth Projection', icon: TrendingUp },
  { 
    name: 'Settings', 
    icon: Settings,
@@ -101,6 +102,10 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, toggleSidebar }) => {
       return isActive 
         ? 'bg-gradient-to-r from-yellow-600 to-orange-600' 
         : 'hover:bg-gradient-to-r hover:from-yellow-600/20 hover:to-orange-600/20';
+    } else if (itemName.includes('Net Worth Projection')) {
+      return isActive 
+        ? 'bg-gradient-to-r from-cyan-600 to-blue-600' 
+        : 'hover:bg-gradient-to-r hover:from-cyan-600/20 hover:to-blue-600/20';
     } else if (itemName.includes('Settings')) {
       return isActive 
         ? 'bg-gradient-to-r from-gray-600 to-gray-700' 

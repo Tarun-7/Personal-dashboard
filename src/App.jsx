@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage';
 import UploadPage from './pages/UploadPage';
 import LiabilitiesPage from './pages/LiabilitiesPage';
 import GoalsPage from './pages/GoalsPage';
+import NetworthProjectionPage from './pages/NetworthProjectionPage';
 import Sidebar from './components/Sidebar';
 import InrMutualFunds from './pages/INR/InrMutualFunds';
 import CashSavingsPage from './pages/CashSavingsPage';
@@ -500,6 +501,21 @@ useEffect(() => {
 
           {/* Goal Page */}
           {activeTab === "Goals" && <GoalsPage />}
+
+          {/* Net Worth Projection Page */}
+          {activeTab === 'Net Worth Projection' && (
+            <NetworthProjectionPage
+              netWorth={
+                usdInrRate && euroInrRate
+                  ? InvestmentCalculationService.calculateNetWorth(
+                      { rupee: rupeeInvestments, usd: usdInvestments, cashAndSavings },
+                      { usdInr: usdInrRate, euroInr: euroInrRate },
+                      'USD'
+                    )
+                  : 0
+              }
+            />
+          )}
 
           {/* Setting Page */}
           {activeTab === 'Setting' && (
