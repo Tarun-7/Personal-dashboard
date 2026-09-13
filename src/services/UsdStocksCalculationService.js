@@ -117,7 +117,7 @@ class UsdStocksCalculationService {
                 price = Number(apiData?.price) || 0;
 
                 // Convert EUR-denominated ETFs to USD (same pairs as before the switch)
-                if ((symbol === 'ETHEEUR' || symbol === 'EMIM') && price > 0 && eurUsdRate > 0) {
+                if ((symbol === 'ETHEEUR' || symbol === 'EMIM' || symbol === 'VWCG') && price > 0 && eurUsdRate > 0) {
                   const eurPrice = price;
                   price = price * eurUsdRate;
                   console.log(`${symbol} conversion: EUR ${eurPrice} -> USD ${price} (EUR/USD: ${eurUsdRate})`);
