@@ -23,6 +23,7 @@ import ExchangeRateService from './services/ExchangeRateService';
 import MutualFundCalculationService from './services/MutualFundCalculationService';
 import SavingsCalculationService from './services/SavingsCalculationService'; 
 import UsdStocksCalculationService from './services/UsdStocksCalculationService';
+import LiabilitiesCalculationService from './services/LiabilitiesCalculationService';
 
 // Import authentication components
 import { AuthProvider } from './contexts/AuthContext';
@@ -87,28 +88,18 @@ const Dashboard = () => {
     mutualFunds: false,
     usdStocks: false,
     exchangeRates: true,
+    liabilities: true,
     initialData: true
   });
 
   // Review states for investments and transactions
   const [goalAmount, setGoalAmount] = useState(10000000); // Set your goal amount here // 'INR' or 'USD' or 'EUR
   const [goalCurrency, setGoalCurrency] = useState('INR'); // 'INR' or 'USD' or 'EUR
-  const [liability, setLiability] = useState([
-    {
-      id: 1,
-      date: "2024-01-15",
-      value: 185000,
-      currency: "USD",
-      note: "Monthly statement balance"
-    },
-    {
-      id: 2,
-      date: "2024-02-15", 
-      value: 182000,
-      currency: "USD",
-      note: "After payment"
-    }
-  ]);
+  const [liabilitiesSummary, setLiabilitiesSummary] = useState({
+    balances: [],
+    itemCount: 0,
+    error: null
+  });
   const activityData = [
     { month: 'Jan', earning: 4, spent: 2 },
     { month: 'Feb', earning: 3, spent: 4 },
@@ -141,6 +132,29 @@ const Dashboard = () => {
 
     loadSavingsData();
   }, []);
+
+  // Load liabilities data on app initialization (mirrors the savings loader —
+  // reads from public/data/liabilities.json since there's no backend)
+  useEffect(() => {
+    const loadLiabilitiesData = async () => {
+      try {
+        updateLoadingState('liabilities', true);
+        const summary = await LiabilitiesCalculationService.calculateLiabilitiesSummary();
+        setLiabilitiesSummary(summary);
+      } catch (error) {
+        console.error('Error loading liabilities data:', error);
+      } finally {
+        updateLoadingState('liabilities', false);
+      }
+    };
+
+    loadLiabilitiesData();
+  }, []);
+
+  // Function to handle liabilities updates from the liabilities page
+  const handleLiabilitiesUpdate = (updatedSummary) => {
+    setLiabilitiesSummary(updatedSummary);
+  };
 
   // Helper function to update loading state
   const updateLoadingState = (key, value) => {
@@ -483,8 +497,10 @@ useEffect(() => {
           {/* Liabilities Page */}
           {activeTab === 'Liabilities' && (
             <LiabilitiesPage
-              balances={liability}
-              setBalances={setLiability}
+              balances={liabilitiesSummary.balances}
+              onLiabilitiesUpdate={handleLiabilitiesUpdate}
+              usdInrRate={usdInrRate}
+              euroInrRate={euroInrRate}
             />
           )}
 

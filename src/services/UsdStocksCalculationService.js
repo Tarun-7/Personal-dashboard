@@ -3,6 +3,21 @@ class UsdStocksCalculationService {
   static CACHE_TIMESTAMP_KEY = 'usd_stock_price_map_timestamp';
   static CACHE_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
+  // Map from your internal/IBKR ETF ticker to the correct Yahoo Finance symbol.
+  // Yahoo uses different exchange suffixes than Alpha Vantage did:
+  //   .L  = London Stock Exchange
+  //   .AS = Euronext Amsterdam
+  //   .DE = Xetra (Deutsche Börse)
+  //   .F  = Frankfurt Stock Exchange
+  // If a symbol stops resolving, test it with curl against the proxy first
+  // (see cloudflare-worker/README.md) before assuming the code is wrong.
+  static ETF_YAHOO_SYMBOLS = {
+    VUAA: 'VUAA.L',
+    ETHEEUR: 'CETH.F',
+    EMIM: 'EMIM.AS',
+    VWCG: 'VWCG.DE',
+  };
+
   static async calculateUsdStocksSummary(transactions, eurUsdRate = 1.2) {
     if (!transactions || transactions.length === 0) {
       return {
@@ -73,42 +88,42 @@ class UsdStocksCalculationService {
 
       const stockPrices = { ...cachedPrices };
       const FINNHUB_API_KEY = import.meta.env.VITE_FINNHUB_API_KEY;
-      const ALPHA_VANTAGE_API_KEY = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY;
+      const ETF_PROXY_URL = import.meta.env.VITE_ETF_PROXY_URL;
 
       for (const symbol of symbols) {
         if (stockPrices[symbol]) continue; // Skip if already cached
 
         try {
           let price = 0;
-          
-          // ETF handling
-          if (symbol === 'VUAA' || symbol === 'ETHEEUR' || symbol === 'EMIM' || symbol === 'VWCG') {
-            // Special handling for VUAA
-            let symbolForApi;
 
-            if (symbol === 'VUAA') {
-              symbolForApi = 'VUAA.LON';
-            } else if (symbol === 'ETHEEUR') {
-              symbolForApi = 'CETH.FRK';
-            } else if (symbol === 'EMIM') {
-              symbolForApi = 'EMIM.AMS';
-            } else if (symbol === 'VWCG') {
-              symbolForApi = 'VWCG.DEX';
-            }
-            const apiRes = await fetch(
-              `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbolForApi)}&apikey=${ALPHA_VANTAGE_API_KEY}`
-            );
-            if (apiRes.ok) {
-              const apiData = await apiRes.json();
-              price = Number(apiData?.['Global Quote']?.['05. price']) || 0;
+          if (this.ETF_YAHOO_SYMBOLS[symbol]) {
+            // ETF handling — routed through the Cloudflare Worker proxy in front of
+            // Yahoo Finance. Finnhub's free tier blocks non-US exchanges (403), and
+            // Alpha Vantage's free tier is capped at 25 requests/day, so neither
+            // reliably served these international-exchange ETFs.
+            if (!ETF_PROXY_URL) {
+              console.warn(
+                `VITE_ETF_PROXY_URL is not set — skipping price fetch for ${symbol}. ` +
+                `See cloudflare-worker/README.md to deploy the proxy.`
+              );
+            } else {
+              const yahooSymbol = this.ETF_YAHOO_SYMBOLS[symbol];
+              const apiRes = await fetch(
+                `${ETF_PROXY_URL}?symbol=${encodeURIComponent(yahooSymbol)}`
+              );
 
-              // Convert EUR to USD for CETH.DEX (ETHEEUR)
-              if ((symbol === 'ETHEEUR' || symbol === 'EMIM') && price > 0 && eurUsdRate > 0) {
-                const eurPrice = price;
-                price = price * eurUsdRate;
-                console.log(`${symbol} conversion: EUR ${eurPrice} -> USD ${price} (EUR/USD: ${eurUsdRate})`);
+              if (apiRes.ok) {
+                const apiData = await apiRes.json();
+                price = Number(apiData?.price) || 0;
+
+                // Convert EUR-denominated ETFs to USD (same pairs as before the switch)
+                if ((symbol === 'ETHEEUR' || symbol === 'EMIM' || symbol === 'VWCG') && price > 0 && eurUsdRate > 0) {
+                  const eurPrice = price;
+                  price = price * eurUsdRate;
+                  console.log(`${symbol} conversion: EUR ${eurPrice} -> USD ${price} (EUR/USD: ${eurUsdRate})`);
+                }
               } else {
-                price = price;
+                console.warn(`ETF proxy returned ${apiRes.status} for ${symbol} (${yahooSymbol})`);
               }
             }
           } else {

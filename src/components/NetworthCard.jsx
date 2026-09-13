@@ -14,8 +14,8 @@ const NetWorthCard = ({
   const [displayedNetWorth, setDisplayedNetWorth] = useState(0);
   
   useEffect(() => {
-    const duration = 3000; // 3 seconds animation
-    const steps = 60;
+    const duration = 1000; // 1 second animation
+    const steps = 20;
     const increment = netWorth / steps;
     const stepDuration = duration / steps;
     let currentStep = 0;
