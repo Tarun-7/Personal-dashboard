@@ -1,13 +1,36 @@
-import React, { useState } from "react";
-import { IndianRupee, DollarSign, Euro, Download, Upload, Plus, Edit2, Trash2, TrendingDown, Calendar, Target, CreditCard, AlertTriangle } from 'lucide-react';
+import React, { useState, useMemo, useRef } from "react";
+import {
+  IndianRupee,
+  DollarSign,
+  Euro,
+  Download,
+  Upload,
+  Plus,
+  Edit2,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Calendar,
+  Target,
+  CreditCard,
+  AlertTriangle,
+} from 'lucide-react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
+import LiabilitiesCalculationService from "../services/LiabilitiesCalculationService";
 
 function LiabilitiesPage({
-  currentBalance = 183934,
-  initialBalance = 200000,
-  loanStartDate = "1 Jan 2023",
-  repaidAmount = 16066,
   balances = [],
-  setBalances = () => {},
+  onLiabilitiesUpdate = () => {},
+  usdInrRate = 83.25,
+  euroInrRate = 90.5,
 }) {
   const [activeTab, setActiveTab] = useState("Balances");
   const [liabilityCurrency, setLiabilityCurrency] = useState("USD");
@@ -15,17 +38,19 @@ function LiabilitiesPage({
   const [inputValue, setInputValue] = useState("");
   const [inputCurrency, setInputCurrency] = useState("USD");
   const [inputNote, setInputNote] = useState("");
+  const fileInputRef = useRef(null);
 
-  // Currency conversion rates (mock data)
-  const conversionRates = {
-    USD: { INR: 83.12, EUR: 0.92 },
-    INR: { USD: 0.012, EUR: 0.011 },
-    EUR: { USD: 1.09, INR: 90.45 }
+  // ---- Currency helpers (normalize everything to INR, then to the display currency) ----
+  const toINR = (amount, currency) => {
+    if (currency === 'USD') return amount * usdInrRate;
+    if (currency === 'EUR') return amount * euroInrRate;
+    return amount;
   };
 
-  const convertCurrency = (amount, from, to) => {
-    if (from === to) return amount;
-    return amount * (conversionRates[from]?.[to] || 1);
+  const fromINR = (amountINR, currency) => {
+    if (currency === 'USD') return usdInrRate > 0 ? amountINR / usdInrRate : 0;
+    if (currency === 'EUR') return euroInrRate > 0 ? amountINR / euroInrRate : 0;
+    return amountINR;
   };
 
   const formatCurrency = (amount, currency) => {
@@ -33,16 +58,32 @@ function LiabilitiesPage({
     return `${symbols[currency] || '$'}${Math.round(amount).toLocaleString()}`;
   };
 
-  const convertedBalance = convertCurrency(currentBalance, 'USD', liabilityCurrency);
-  const convertedInitialBalance = convertCurrency(initialBalance, 'USD', liabilityCurrency);
-  const convertedRepaidAmount = convertCurrency(repaidAmount, 'USD', liabilityCurrency);
+  // ---- Derive current/initial/repaid balance from the actual entries ----
+  const sortedBalances = useMemo(
+    () => [...balances].sort((a, b) => new Date(a.date) - new Date(b.date)),
+    [balances]
+  );
+
+  const earliestEntry = sortedBalances[0] || null;
+  const latestEntry = sortedBalances[sortedBalances.length - 1] || null;
+
+  const initialBalanceINR = earliestEntry ? toINR(earliestEntry.value, earliestEntry.currency) : 0;
+  const currentBalanceINR = latestEntry ? toINR(latestEntry.value, latestEntry.currency) : 0;
+  const repaidAmountINR = initialBalanceINR - currentBalanceINR;
+  const isIncreasing = repaidAmountINR < 0;
+
+  const loanStartDateObj = earliestEntry ? new Date(earliestEntry.date) : null;
+
+  const convertedBalance = fromINR(currentBalanceINR, liabilityCurrency);
+  const convertedInitialBalance = fromINR(initialBalanceINR, liabilityCurrency);
+  const convertedRepaidAmount = fromINR(Math.abs(repaidAmountINR), liabilityCurrency);
 
   const handleAddBalance = () => {
     if (!inputDate || !inputValue || isNaN(parseFloat(inputValue))) {
       alert('Please fill in both date and a valid numeric value');
       return;
     }
-    
+
     const newBalance = {
       id: Date.now(),
       date: inputDate,
@@ -50,9 +91,10 @@ function LiabilitiesPage({
       currency: inputCurrency,
       note: inputNote,
     };
-    
-    setBalances([newBalance, ...balances]);
-    
+
+    const updatedSummary = LiabilitiesCalculationService.updateLiabilitiesData(balances, newBalance, false);
+    onLiabilitiesUpdate(updatedSummary);
+
     // Clear form
     setInputDate("");
     setInputValue("");
@@ -61,8 +103,8 @@ function LiabilitiesPage({
   };
 
   const handleDelete = (id) => {
-    const newBalances = balances.filter((b) => b.id !== id);
-    setBalances(newBalances);
+    const updatedSummary = LiabilitiesCalculationService.deleteLiabilitiesItem(balances, id);
+    onLiabilitiesUpdate(updatedSummary);
   };
 
   const formatDate = (d) =>
@@ -89,10 +131,11 @@ function LiabilitiesPage({
     setLiabilityCurrency(currencies[nextIndex]);
   };
 
-  const repaymentPercentage = initialBalance > 0 ? (repaidAmount / initialBalance) * 100 : 0;
-  const remainingPercentage = 100 - repaymentPercentage;
+  const repaymentPercentage = initialBalanceINR > 0 ? (repaidAmountINR / initialBalanceINR) * 100 : 0;
+  const clampedRepaymentPercentage = Math.max(0, Math.min(repaymentPercentage, 100));
+  const remainingPercentage = 100 - clampedRepaymentPercentage;
 
-  const handleDownload = () => {
+  const handleDownloadCSV = () => {
     if (balances.length === 0) {
       alert('No data to download');
       return;
@@ -101,7 +144,7 @@ function LiabilitiesPage({
     try {
       const headers = ['Date', 'Value', 'Currency', 'Note'];
       const csvRows = [headers.join(',')];
-      
+
       balances.forEach(balance => {
         const row = [
           formatDate(balance.date),
@@ -116,20 +159,97 @@ function LiabilitiesPage({
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      
+
       link.href = url;
       link.download = `liabilities_balances_${new Date().toISOString().split('T')[0]}.csv`;
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
     } catch (error) {
       console.error('Download failed:', error);
       alert('Download failed. Please try again.');
     }
   };
+
+  // Downloads the raw balances array — the exact shape LiabilitiesCalculationService
+  // expects, so this file can be dropped straight into public/data/liabilities.json
+  // to persist across reloads without a backend.
+  const handleDownloadJSON = () => {
+    if (balances.length === 0) {
+      alert('No data to download');
+      return;
+    }
+
+    try {
+      const jsonString = JSON.stringify(balances, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = 'liabilities.json';
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Download failed. Please try again.');
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (
+      balances.length > 0 &&
+      !window.confirm('This will replace your current liability entries with the uploaded file. Continue?')
+    ) {
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        if (!Array.isArray(parsed)) {
+          throw new Error('File must contain a JSON array of balance entries');
+        }
+        const updatedSummary = LiabilitiesCalculationService.processLiabilitiesData(parsed);
+        onLiabilitiesUpdate(updatedSummary);
+      } catch (error) {
+        console.error('Failed to import liabilities JSON:', error);
+        alert('Could not read that file. Make sure it is a valid liabilities JSON export.');
+      } finally {
+        e.target.value = '';
+      }
+    };
+    reader.onerror = () => {
+      alert('Failed to read the file.');
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  // Real trend data from the entries themselves, in the currently selected currency
+  const trendData = useMemo(
+    () =>
+      sortedBalances.map((b) => ({
+        date: formatDate(b.date),
+        value: Math.round(fromINR(toINR(b.value, b.currency), liabilityCurrency)),
+      })),
+    [sortedBalances, liabilityCurrency, usdInrRate, euroInrRate]
+  );
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-6">
@@ -160,7 +280,7 @@ function LiabilitiesPage({
               <div>
                 <p className="text-red-100 text-sm font-medium">Current Balance</p>
                 <p className="text-3xl font-bold text-white">{formatCurrency(convertedBalance, liabilityCurrency)}</p>
-                <p className="text-red-200 text-xs mt-1">Outstanding debt</p>
+                <p className="text-red-200 text-xs mt-1">Most recent entry</p>
               </div>
               <div className="p-3 bg-white/20 backdrop-blur rounded-xl">
                 <AlertTriangle className="w-8 h-8 text-white" />
@@ -173,7 +293,7 @@ function LiabilitiesPage({
               <div>
                 <p className="text-orange-100 text-sm font-medium">Initial Balance</p>
                 <p className="text-3xl font-bold text-white">{formatCurrency(convertedInitialBalance, liabilityCurrency)}</p>
-                <p className="text-orange-200 text-xs mt-1">Original amount</p>
+                <p className="text-orange-200 text-xs mt-1">First recorded entry</p>
               </div>
               <div className="p-3 bg-white/20 backdrop-blur rounded-xl">
                 <CreditCard className="w-8 h-8 text-white" />
@@ -185,8 +305,10 @@ function LiabilitiesPage({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 text-sm font-medium">Loan Start Date</p>
-                <p className="text-3xl font-bold text-white">{loanStartDate}</p>
-                <p className="text-blue-200 text-xs mt-1">Origination date</p>
+                <p className="text-3xl font-bold text-white">
+                  {loanStartDateObj ? formatDate(earliestEntry.date) : 'No entries'}
+                </p>
+                <p className="text-blue-200 text-xs mt-1">Earliest entry</p>
               </div>
               <div className="p-3 bg-white/20 backdrop-blur rounded-xl">
                 <Calendar className="w-8 h-8 text-white" />
@@ -194,12 +316,16 @@ function LiabilitiesPage({
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 border border-green-400/20">
+          <div className={`bg-gradient-to-r ${isIncreasing ? 'from-red-500 to-rose-600' : 'from-green-500 to-emerald-600'} rounded-2xl p-6 border ${isIncreasing ? 'border-red-400/20' : 'border-green-400/20'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm font-medium">Repaid Amount</p>
+                <p className={`${isIncreasing ? 'text-red-100' : 'text-green-100'} text-sm font-medium`}>
+                  {isIncreasing ? 'Balance Increase' : 'Repaid Amount'}
+                </p>
                 <p className="text-3xl font-bold text-white">{formatCurrency(convertedRepaidAmount, liabilityCurrency)}</p>
-                <p className="text-green-200 text-xs mt-1">{repaymentPercentage.toFixed(1)}% complete</p>
+                <p className={`${isIncreasing ? 'text-red-200' : 'text-green-200'} text-xs mt-1`}>
+                  {Math.abs(repaymentPercentage).toFixed(1)}% {isIncreasing ? 'increase' : 'complete'}
+                </p>
               </div>
               <div className="p-3 bg-white/20 backdrop-blur rounded-xl">
                 <Target className="w-8 h-8 text-white" />
@@ -216,23 +342,27 @@ function LiabilitiesPage({
               <p className="text-gray-400 text-sm">Track your repayment journey</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-green-400">{repaymentPercentage.toFixed(1)}%</p>
-              <p className="text-sm text-gray-400">Repaid</p>
+              <p className={`text-2xl font-bold ${isIncreasing ? 'text-red-400' : 'text-green-400'}`}>
+                {clampedRepaymentPercentage.toFixed(1)}%
+              </p>
+              <p className="text-sm text-gray-400">{isIncreasing ? 'Increased' : 'Repaid'}</p>
             </div>
           </div>
-          
+
           <div className="mb-4">
             <div className="bg-slate-700 rounded-full h-4 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-700 rounded-full"
-                style={{ width: `${Math.min(repaymentPercentage, 100)}%` }}
+                className={`h-full bg-gradient-to-r ${isIncreasing ? 'from-red-400 to-rose-500' : 'from-green-400 to-emerald-500'} transition-all duration-700 rounded-full`}
+                style={{ width: `${clampedRepaymentPercentage}%` }}
               ></div>
             </div>
           </div>
-          
+
           <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Repaid: {formatCurrency(convertedRepaidAmount, liabilityCurrency)}</span>
-            <span className="text-gray-400">Remaining: {formatCurrency(convertedBalance, liabilityCurrency)}</span>
+            <span className="text-gray-400">
+              {isIncreasing ? 'Increase' : 'Repaid'}: {formatCurrency(convertedRepaidAmount, liabilityCurrency)}
+            </span>
+            <span className="text-gray-400">Current: {formatCurrency(convertedBalance, liabilityCurrency)}</span>
           </div>
         </div>
 
@@ -258,15 +388,35 @@ function LiabilitiesPage({
           <div className="space-y-6">
             {/* Action Buttons */}
             <div className="flex justify-end space-x-3">
-              <button 
-                onClick={handleDownload}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json,.json"
+                onChange={handleFileSelected}
+                className="hidden"
+              />
+              <button
+                onClick={handleDownloadCSV}
                 disabled={balances.length === 0}
                 className="flex items-center space-x-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={16} />
                 <span>Download CSV</span>
               </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors">
+              <button
+                onClick={handleDownloadJSON}
+                disabled={balances.length === 0}
+                className="flex items-center space-x-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Download as liabilities.json — drop this into public/data/ to persist it across reloads"
+              >
+                <Download size={16} />
+                <span>Download JSON</span>
+              </button>
+              <button
+                onClick={handleUploadClick}
+                className="flex items-center space-x-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                title="Load a previously downloaded liabilities.json"
+              >
                 <Upload size={16} />
                 <span>Upload</span>
               </button>
@@ -333,7 +483,7 @@ function LiabilitiesPage({
             {/* Balance Entries */}
             {balances.length > 0 ? (
               <div className="grid gap-4">
-                {balances.map((balance, index) => (
+                {sortedBalances.slice().reverse().map((balance) => (
                   <div key={balance.id} className="bg-slate-800 rounded-2xl border border-slate-700 p-6 hover:border-slate-600 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
@@ -382,7 +532,7 @@ function LiabilitiesPage({
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-3">No Balance Entries</h3>
                   <p className="text-gray-400 mb-6">
-                    Add your first liability balance to start tracking
+                    Add your first liability balance to start tracking, or upload a previously downloaded liabilities.json
                   </p>
                 </div>
               </div>
@@ -406,14 +556,16 @@ function LiabilitiesPage({
                     </div>
                     <div className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg">
                       <span className="text-gray-400">Progress Made</span>
-                      <span className="text-xl font-bold text-green-400">
-                        {repaymentPercentage.toFixed(1)}%
+                      <span className={`text-xl font-bold ${isIncreasing ? 'text-red-400' : 'text-green-400'}`}>
+                        {clampedRepaymentPercentage.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg">
                       <span className="text-gray-400">Time Since Start</span>
                       <span className="text-xl font-bold text-blue-400">
-                        {Math.floor((new Date() - new Date(loanStartDate.replace(/(\d+)\s(\w+)\s(\d+)/, '$2 $1, $3'))) / (1000 * 60 * 60 * 24 * 30))} months
+                        {loanStartDateObj
+                          ? `${Math.floor((new Date() - loanStartDateObj) / (1000 * 60 * 60 * 24 * 30))} months`
+                          : '—'}
                       </span>
                     </div>
                   </div>
@@ -421,70 +573,59 @@ function LiabilitiesPage({
                 
                 <div className="bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-2xl p-6 border border-red-500/20">
                   <h3 className="text-lg font-semibold text-white mb-4">Debt Trend</h3>
-                  <div className="relative h-48">
-                    <svg className="w-full h-full" viewBox="0 0 300 120">
-                      {/* Grid lines */}
-                      <defs>
-                        <pattern id="grid" width="30" height="20" patternUnits="userSpaceOnUse">
-                          <path d="M 30 0 L 0 0 0 20" fill="none" stroke="#374151" strokeWidth="0.5" opacity="0.3"/>
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#grid)" />
-                      
-                      {/* Area under curve */}
-                      <defs>
-                        <linearGradient id="debtGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#EF4444" stopOpacity="0.3"/>
-                          <stop offset="100%" stopColor="#EF4444" stopOpacity="0.1"/>
-                        </linearGradient>
-                      </defs>
-                      
-                      {/* Sample debt reduction curve */}
-                      <path
-                        d="M 20 80 Q 60 75 100 70 Q 140 65 180 60 Q 220 50 260 45 L 280 40"
-                        stroke="#EF4444"
-                        strokeWidth="2"
-                        fill="none"
-                        className="animate-pulse"
-                      />
-                      
-                      {/* Area fill */}
-                      <path
-                        d="M 20 80 Q 60 75 100 70 Q 140 65 180 60 Q 220 50 260 45 L 280 40 L 280 100 L 20 100 Z"
-                        fill="url(#debtGradient)"
-                      />
-                      
-                      {/* Data points */}
-                      <circle cx="20" cy="80" r="3" fill="#EF4444" className="animate-pulse" />
-                      <circle cx="100" cy="70" r="3" fill="#EF4444" className="animate-pulse" />
-                      <circle cx="180" cy="60" r="3" fill="#EF4444" className="animate-pulse" />
-                      <circle cx="260" cy="45" r="3" fill="#EF4444" className="animate-pulse" />
-                      <circle cx="280" cy="40" r="3" fill="#10B981" className="animate-pulse" />
-                    </svg>
-                    
-                    {/* Y-axis labels */}
-                    <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 -ml-8">
-                      <span>{formatCurrency(convertedInitialBalance, liabilityCurrency)}</span>
-                      <span>{formatCurrency(convertedInitialBalance * 0.5, liabilityCurrency)}</span>
-                      <span>0</span>
+                  {trendData.length >= 2 ? (
+                    <ResponsiveContainer width="100%" height={220}>
+                      <AreaChart data={trendData}>
+                        <defs>
+                          <linearGradient id="debtGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#EF4444" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#EF4444" stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis dataKey="date" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
+                        <YAxis
+                          stroke="#9CA3AF"
+                          tick={{ fontSize: 11 }}
+                          tickFormatter={(v) => formatCurrency(v, liabilityCurrency)}
+                          width={70}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1f2937',
+                            border: '1px solid #374151',
+                            borderRadius: '8px',
+                            color: '#fff',
+                          }}
+                          formatter={(value) => [formatCurrency(value, liabilityCurrency), 'Balance']}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#EF4444"
+                          strokeWidth={2}
+                          fill="url(#debtGradient)"
+                          isAnimationActive={false}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-48 flex items-center justify-center text-center px-4">
+                      <p className="text-gray-400 text-sm">
+                        Add at least two balance entries to see a trend line here.
+                      </p>
                     </div>
-                    
-                    {/* X-axis labels */}
-                    <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-gray-500 -mb-6">
-                      <span>Start</span>
-                      <span>6mo</span>
-                      <span>1yr</span>
-                      <span>18mo</span>
-                      <span>Now</span>
-                    </div>
-                  </div>
-                  
+                  )}
+
                   <div className="mt-4 flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                       <span className="text-gray-400">Debt Balance</span>
                     </div>
-                    <span className="text-red-400 font-medium">Trending Down</span>
+                    <span className={`font-medium flex items-center gap-1 ${isIncreasing ? 'text-red-400' : 'text-emerald-400'}`}>
+                      {isIncreasing ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                      {isIncreasing ? 'Trending Up' : 'Trending Down'}
+                    </span>
                   </div>
                 </div>
               </div>
