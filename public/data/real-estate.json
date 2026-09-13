@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Whitefield Apartment",
+    "address": "Whitefield, Bengaluru",
+    "type": "Residential",
+    "currency": "INR",
+    "purchasePrice": 8500000,
+    "currentValue": 11200000,
+    "purchaseDate": "2021-03-15",
+    "description": "2BHK, primary residence",
+    "mortgage": {
+      "lender": "HDFC Bank",
+      "loanAmount": 6800000,
+      "interestRate": 8.6,
+      "tenureMonths": 240,
+      "startDate": "2021-04-01"
+    }
+  },
+  {
+    "id": 2,
+    "name": "Family Land Plot",
+    "address": "Mysuru Outskirts",
+    "type": "Land",
+    "currency": "INR",
+    "purchasePrice": 1200000,
+    "currentValue": 2100000,
+    "purchaseDate": "2018-11-02",
+    "description": "Bought outright, no financing",
+    "mortgage": null
+  }
+]

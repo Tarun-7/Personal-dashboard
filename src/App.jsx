@@ -14,6 +14,7 @@ import CryptoInvestments from './pages/CryptoInvestmentsPage';
 import LoadingPage from './pages/LoadingPage';
 import PageHeader from './components/PageHeader';
 import FloatingDock from './components/FloatingDock';
+import RealEstatePage from './pages/RealEstatePage';
 
 
 // Import Services
@@ -24,6 +25,7 @@ import MutualFundCalculationService from './services/MutualFundCalculationServic
 import SavingsCalculationService from './services/SavingsCalculationService'; 
 import UsdStocksCalculationService from './services/UsdStocksCalculationService';
 import LiabilitiesCalculationService from './services/LiabilitiesCalculationService';
+import RealEstateCalculationService from './services/RealEstateCalculationService';
 
 // Import authentication components
 import { AuthProvider } from './contexts/AuthContext';
@@ -114,6 +116,13 @@ const Dashboard = () => {
     { month: 'Nov', earning: 4, spent: 3 },
     { month: 'Dec', earning: 6, spent: 2 }
   ];
+
+// Review states for Real Estate
+const [realEstateSummary, setRealEstateSummary] = useState({ properties: [], propertiesData: [], itemCount: 0, error: null });
+useEffect(() => {
+RealEstateCalculationService.loadRealEstateData().then(setRealEstateSummary);
+}, []);
+const handleRealEstateUpdate = (updated) => setRealEstateSummary(updated);
 
   // Load savings data on app initialization
   useEffect(() => {
@@ -530,6 +539,16 @@ useEffect(() => {
                     )
                   : 0
               }
+            />
+          )}
+
+          {/* Real Estate Page */}
+          {activeTab === 'Real Estate' && (
+            <RealEstatePage
+              realEstateSummary={realEstateSummary}
+              onRealEstateUpdate={handleRealEstateUpdate}
+              usdInrRate={usdInrRate}
+              euroInrRate={euroInrRate}
             />
           )}
 

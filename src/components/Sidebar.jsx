@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, CreditCard, BarChart3, Settings, Siren, Goal, ChevronDown, ChevronRight, PieChart, TrendingUp, DollarSign, Bitcoin, PiggyBank, LogOut, Target, Bell, User, IndianRupee, Menu, X } from 'lucide-react';
+import { Home, CreditCard, Landmark, BarChart3, Settings, Siren, Goal, ChevronDown, ChevronRight, PieChart, TrendingUp, DollarSign, Bitcoin, PiggyBank, LogOut, Target, Bell, User, IndianRupee, Menu, X } from 'lucide-react';
 
 const sidebarItems = [
  { name: 'Dashboard', icon: Home },
@@ -25,6 +25,7 @@ const sidebarItems = [
  { name: 'Liabilities', icon: Siren },
  { name: 'Goals', icon: Goal },
  { name: 'Net Worth Projection', icon: TrendingUp },
+ { name: 'Real Estate', icon: Landmark },
  { 
    name: 'Settings', 
    icon: Settings,
