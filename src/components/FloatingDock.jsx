@@ -7,7 +7,8 @@ import {
   IndianRupee,
   DollarSign,
   CreditCard,
-  PiggyBank
+  PiggyBank,
+  Landmark
 } from 'lucide-react';
 
 const FloatingDock = ({ activeTab, setActiveTab, sidebarOpen, topbar }) => {
@@ -15,11 +16,11 @@ const FloatingDock = ({ activeTab, setActiveTab, sidebarOpen, topbar }) => {
     { id: 'Dashboard', icon: LayoutDashboard, label: 'Dashboard', color: 'from-blue-500 to-cyan-500' },
     { id: 'INR Investments', icon: IndianRupee, label: 'INR Investments', color: 'from-green-500 to-emerald-500' },
     { id: 'USD Investments', icon: DollarSign, label: 'USD Investments', color: 'from-orange-500 to-yellow-500' },
+    { id: 'Real Estate', icon: Landmark, label: 'Real Estate', color: 'from-green-500 to-teal-500' },
     { id: 'Cash & Savings', icon: PiggyBank, label: 'Cash & Savings', color: 'from-indigo-500 to-purple-500' },
     { id: 'Goals', icon: Target, label: 'Goals', color: 'from-red-500 to-rose-500' },
     { id: 'Liabilities', icon: CreditCard, label: 'Liabilities', color: 'from-pink-500 to-red-500' },
     { id: 'Upload', icon: Upload, label: 'Upload', color: 'from-purple-500 to-pink-500' },
-    { id: 'Item8', icon: CreditCard, label: 'Item8', color: 'from-green-500 to-teal-500' },
     { id: 'Item9', icon: CreditCard, label: 'Item9', color: 'from-yellow-500 to-amber-500' },
     { id: 'Item10', icon: CreditCard, label: 'Item10', color: 'from-cyan-500 to-blue-500' },
   ];

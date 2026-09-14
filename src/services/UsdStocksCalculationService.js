@@ -13,9 +13,11 @@ class UsdStocksCalculationService {
   // (see cloudflare-worker/README.md) before assuming the code is wrong.
   static ETF_YAHOO_SYMBOLS = {
     VUAA: 'VUAA.L',
-    ETHEEUR: 'CETH.F',
+    ETHEEUR: 'CETH.PA',
     EMIM: 'EMIM.AS',
     VWCG: 'VWCG.DE',
+    JEDI: 'JEDI.DE',
+    EGLN: 'EGLN.L'
   };
 
   static async calculateUsdStocksSummary(transactions, eurUsdRate = 1.2) {
@@ -117,7 +119,7 @@ class UsdStocksCalculationService {
                 price = Number(apiData?.price) || 0;
 
                 // Convert EUR-denominated ETFs to USD (same pairs as before the switch)
-                if ((symbol === 'ETHEEUR' || symbol === 'EMIM' || symbol === 'VWCG') && price > 0 && eurUsdRate > 0) {
+                if ((symbol === 'ETHEEUR' || symbol === 'EMIM' || symbol === 'VWCG'|| symbol === 'JEDI') && price > 0 && eurUsdRate > 0) {
                   const eurPrice = price;
                   price = price * eurUsdRate;
                   console.log(`${symbol} conversion: EUR ${eurPrice} -> USD ${price} (EUR/USD: ${eurUsdRate})`);
