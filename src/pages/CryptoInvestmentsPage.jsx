@@ -1,3 +1,5 @@
+// Decomissioned as I dont have crypto investments anymore. Keeping the code for future reference if I ever want to add it back in.
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   Plus,

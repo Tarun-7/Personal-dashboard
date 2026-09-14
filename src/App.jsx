@@ -10,7 +10,6 @@ import Sidebar from './components/Sidebar';
 import InrMutualFunds from './pages/INR/InrMutualFunds';
 import CashSavingsPage from './pages/CashSavingsPage';
 import UsdStocksPage from './pages/USD/UsdStocksPage';
-import CryptoInvestments from './pages/CryptoInvestmentsPage';
 import LoadingPage from './pages/LoadingPage';
 import PageHeader from './components/PageHeader';
 import FloatingDock from './components/FloatingDock';
@@ -489,10 +488,15 @@ useEffect(() => {
             />
           )}  
 
-          {activeTab === 'Crypto Investments' && (
-            <CryptoInvestments
+          {/* Real Estate Page */}
+          {activeTab === 'Real Estate' && (
+            <RealEstatePage
+              realEstateSummary={realEstateSummary}
+              onRealEstateUpdate={handleRealEstateUpdate}
+              usdInrRate={usdInrRate}
+              euroInrRate={euroInrRate}
             />
-          )}  
+          )} 
 
           {/* Upload Page */}
           {activeTab === 'Upload' && (
@@ -539,16 +543,6 @@ useEffect(() => {
                     )
                   : 0
               }
-            />
-          )}
-
-          {/* Real Estate Page */}
-          {activeTab === 'Real Estate' && (
-            <RealEstatePage
-              realEstateSummary={realEstateSummary}
-              onRealEstateUpdate={handleRealEstateUpdate}
-              usdInrRate={usdInrRate}
-              euroInrRate={euroInrRate}
             />
           )}
 

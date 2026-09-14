@@ -15,7 +15,7 @@ const sidebarItems = [
   //    { name: 'Crypto', path: 'usd-crypto', icon: Bitcoin }
   // ]
  },
- { name: 'Crypto Investments', icon: Bitcoin },
+ { name: 'Real Estate', icon: Landmark },
  { name: 'Cash & Savings', icon: PiggyBank },
  { name: 'Upload', icon: CreditCard },
  { 
@@ -25,7 +25,6 @@ const sidebarItems = [
  { name: 'Liabilities', icon: Siren },
  { name: 'Goals', icon: Goal },
  { name: 'Net Worth Projection', icon: TrendingUp },
- { name: 'Real Estate', icon: Landmark },
  { 
    name: 'Settings', 
    icon: Settings,
