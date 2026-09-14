@@ -41,6 +41,7 @@ jobs:
           VITE_FINNHUB_API_KEY: ${{ secrets.VITE_FINNHUB_API_KEY }}
           VITE_ALPHA_VANTAGE_API_KEY: ${{ secrets.VITE_ALPHA_VANTAGE_API_KEY }}
           VITE_USER_NAME: ${{ secrets.VITE_USER_NAME }}
+          VITE_ETF_PROXY_URL: ${{ secrets.VITE_ETF_PROXY_URL }}
           
       - name: Setup Pages
         uses: actions/configure-pages@v4
