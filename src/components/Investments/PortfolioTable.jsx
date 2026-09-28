@@ -129,7 +129,14 @@ const PortfolioTable = ({
                 </thead>
 
                 <tbody>
-                  {filteredAndSortedData.map((item, index) => (
+                  {filteredAndSortedData.map((item, index) => {
+                    const hasProfitSplit = isStock && typeof item.unrealizedGains === 'number';
+                    const headlineProfitLoss = hasProfitSplit ? item.unrealizedGains : item.profitLoss;
+                    const displayedPercent = ((returnType === "absolute"
+                      ? item.profitLossPercent
+                      : item.xirrPercent) || 0);
+
+                    return (
                     <tr 
                       key={index} 
                       className={`border-b border-slate-700/40 hover:border-blue-500/30 hover:bg-slate-800/30 hover:-translate-y-px transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 ${
@@ -206,36 +213,42 @@ const PortfolioTable = ({
                         <div>
                           <div className="flex items-center justify-end gap-2 mb-1">
                             <span className={`font-bold text-sm sm:text-base ${
-                              (item.profitLoss || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                              (headlineProfitLoss || 0) >= 0 ? "text-emerald-400" : "text-red-400"
                             }`}>
-                              {formatCurrency(item.profitLoss)}
+                              {formatCurrency(headlineProfitLoss)}
                             </span>
-                            {(item.profitLoss || 0) > 0 ? (
+                            {(headlineProfitLoss || 0) > 0 ? (
                               <TrendingUp className={`w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 flex-shrink-0 ${
                                 isFund ? 'hover:scale-110 transition-transform duration-200' : ''
                               }`} />
-                            ) : (item.profitLoss || 0) < 0 ? (
+                            ) : (headlineProfitLoss || 0) < 0 ? (
                               <TrendingDown className={`w-4 h-4 sm:w-5 sm:h-5 text-red-400 flex-shrink-0 ${
                                 isFund ? 'hover:scale-110 transition-transform duration-200' : ''
                               }`} />
                             ) : null}
                           </div>
                           <div className={`text-xs font-semibold ${
-                            (item.profitLoss || 0) > 0
+                            displayedPercent > 0
                               ? 'text-emerald-400'
-                              : (item.profitLoss || 0) < 0
+                              : displayedPercent < 0
                               ? 'text-red-400'
                               : 'text-slate-400'
                           }`}>
-                            {((returnType === "absolute"
-                              ? item.profitLossPercent
-                              : item.xirrPercent) || 0
-                            ).toFixed(2)}%
+                            {displayedPercent.toFixed(2)}%
                           </div>
+                          {hasProfitSplit && (
+                            <div className="text-[10px] text-slate-500 mt-1">
+                              Realized:{' '}
+                              <span className={(item.totalFifoPnlRealized || 0) >= 0 ? 'text-emerald-500/90' : 'text-red-500/90'}>
+                                {formatCurrency(item.totalFifoPnlRealized)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
 
                 {/* Footer with totals */}
@@ -275,9 +288,11 @@ const PortfolioTable = ({
         <div className="md:hidden space-y-3">
           {filteredAndSortedData.map((item, index) => {
             const profitLoss = item.profitLoss || 0;
-            const returnPercent = returnType === "absolute" 
+            const returnPercent = (returnType === "absolute" 
               ? item.profitLossPercent 
-              : item.xirrPercent;
+              : item.xirrPercent) || 0;
+            const hasProfitSplit = isStock && typeof item.unrealizedGains === 'number';
+            const headlineProfitLoss = hasProfitSplit ? (item.unrealizedGains || 0) : profitLoss;
             const isExpanded = expandedRows.has(index);
 
             return (
@@ -327,15 +342,23 @@ const PortfolioTable = ({
                     <div className="text-right">
                       <div className="text-xs text-slate-500 mb-1">Profit/Loss</div>
                       <div className={`font-bold text-base ${
-                        profitLoss >= 0 ? "text-emerald-400" : "text-red-400"
+                        headlineProfitLoss >= 0 ? "text-emerald-400" : "text-red-400"
                       }`}>
-                        {formatCurrency(profitLoss)}
+                        {formatCurrency(headlineProfitLoss)}
                       </div>
                       <div className={`text-xs font-semibold mt-1 ${
-                        profitLoss > 0 ? 'text-emerald-400' : profitLoss < 0 ? 'text-red-400' : 'text-slate-400'
+                        returnPercent > 0 ? 'text-emerald-400' : returnPercent < 0 ? 'text-red-400' : 'text-slate-400'
                       }`}>
-                        {(returnPercent || 0).toFixed(2)}%
+                        {returnPercent.toFixed(2)}%
                       </div>
+                      {hasProfitSplit && (
+                        <div className="text-[10px] text-slate-500 mt-1">
+                          Realized:{' '}
+                          <span className={(item.totalFifoPnlRealized || 0) >= 0 ? 'text-emerald-500/90' : 'text-red-500/90'}>
+                            {formatCurrency(item.totalFifoPnlRealized)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -385,6 +408,7 @@ const PortfolioTable = ({
                         </div>
                       </div>
                     </div>
+
                   </div>
                 )}
               </div>
