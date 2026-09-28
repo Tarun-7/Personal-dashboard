@@ -140,6 +140,22 @@ const TransactionDetails = ({
               }`}>
                 {formatPercent(returnType === 'absolute' ? selectedItemData.profitLossPercent : selectedItemData.xirrPercent)}
               </p>
+              {isStock && typeof selectedItemData.totalFifoPnlRealized === 'number' && (
+                <div className="mt-2 pt-2 border-t border-white/10 space-y-0.5">
+                  <div className="flex justify-between text-xs text-slate-400">
+                    <span>Realized</span>
+                    <span className={(selectedItemData.totalFifoPnlRealized || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                      {formatCurrency(selectedItemData.totalFifoPnlRealized)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-400">
+                    <span>Unrealized</span>
+                    <span className={(selectedItemData.unrealizedGains || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                      {formatCurrency(selectedItemData.unrealizedGains)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

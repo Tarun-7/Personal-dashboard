@@ -20,6 +20,25 @@ class UsdStocksCalculationService {
     EGLN: 'EGLN.L'
   };
 
+  // Same idea as ETF_YAHOO_SYMBOLS above, but for regular stocks whose IBKR
+  // ticker isn't what Yahoo knows them by - typically stocks IBKR trades on a
+  // non-US exchange. Symbols listed here skip Finnhub (its free tier doesn't
+  // cover non-US exchanges) and are priced through the same Cloudflare Worker
+  // proxy as the ETFs. Keys must match the IBKR "Symbol" column exactly
+  // (case-sensitive), and are quoted because a ticker starting with a digit
+  // isn't a valid bare object key.
+  //   .MU = Munich Stock Exchange (quoted in EUR)
+  static STOCK_YAHOO_SYMBOLS = {
+    '2DG': '2DG.MU'
+  };
+
+  // Stocks whose IBKR trades are denominated in EUR, so their trade amounts
+  // (NetCash / IBCommission / FifoPnlRealized) get the same EUR -> USD
+  // conversion ETHEEUR gets in processStocksData. If a stock's Net Invested
+  // looks off by roughly the EUR/USD rate versus IBKR, its trades are already
+  // in USD - remove it from this list.
+  static EUR_TRADED_STOCKS = ['2DG'];
+
   static async calculateUsdStocksSummary(transactions, eurUsdRate = 1.2) {
     if (!transactions || transactions.length === 0) {
       return {
@@ -98,18 +117,20 @@ class UsdStocksCalculationService {
         try {
           let price = 0;
 
-          if (this.ETF_YAHOO_SYMBOLS[symbol]) {
+          if (this.ETF_YAHOO_SYMBOLS[symbol] || this.STOCK_YAHOO_SYMBOLS[symbol]) {
             // ETF handling — routed through the Cloudflare Worker proxy in front of
             // Yahoo Finance. Finnhub's free tier blocks non-US exchanges (403), and
             // Alpha Vantage's free tier is capped at 25 requests/day, so neither
             // reliably served these international-exchange ETFs.
+            // Stocks listed in STOCK_YAHOO_SYMBOLS take this same path for the
+            // same reason (non-US listings Finnhub can't price).
             if (!ETF_PROXY_URL) {
               console.warn(
                 `VITE_ETF_PROXY_URL is not set — skipping price fetch for ${symbol}. ` +
                 `See cloudflare-worker/README.md to deploy the proxy.`
               );
             } else {
-              const yahooSymbol = this.ETF_YAHOO_SYMBOLS[symbol];
+              const yahooSymbol = this.ETF_YAHOO_SYMBOLS[symbol] || this.STOCK_YAHOO_SYMBOLS[symbol];
               const apiRes = await fetch(
                 `${ETF_PROXY_URL}?symbol=${encodeURIComponent(yahooSymbol)}`
               );
@@ -124,18 +145,39 @@ class UsdStocksCalculationService {
                   price = price * eurUsdRate;
                   console.log(`${symbol} conversion: EUR ${eurPrice} -> USD ${price} (EUR/USD: ${eurUsdRate})`);
                 }
+
+                // Mapped stocks: convert only when Yahoo itself reports the quote
+                // in EUR (e.g. .MU / .DE listings) instead of hardcoding a symbol
+                // list - the worker passes Yahoo's currency through in its payload.
+                if (this.STOCK_YAHOO_SYMBOLS[symbol] && apiData?.currency === 'EUR' && price > 0 && eurUsdRate > 0) {
+                  const eurPrice = price;
+                  price = price * eurUsdRate;
+                  console.log(`${symbol} conversion: EUR ${eurPrice} -> USD ${price} (EUR/USD: ${eurUsdRate})`);
+                }
               } else {
                 console.warn(`ETF proxy returned ${apiRes.status} for ${symbol} (${yahooSymbol})`);
               }
             }
           } else {
-            // Use Finnhub for other US stocks
-            const apiRes = await fetch(
-              `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_API_KEY}`
-            );
-            if (apiRes.ok) {
-              const apiData = await apiRes.json();
-              price = Number(apiData?.c) || 0;
+            // Use Finnhub for other US stocks, falling back to Yahoo (through
+            // the same Cloudflare Worker proxy used for ETF pricing above) if
+            // Finnhub fails outright or comes back with no usable price.
+            try {
+              const apiRes = await fetch(
+                `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_API_KEY}`
+              );
+              if (apiRes.ok) {
+                const apiData = await apiRes.json();
+                price = Number(apiData?.c) || 0;
+              }
+            } catch (finnhubError) {
+              console.warn(`Finnhub failed for ${symbol}, trying Yahoo fallback:`, finnhubError);
+            }
+
+            // Finnhub can return ok:true with c:0 for a bad/unsupported symbol —
+            // treat "no price" the same as a hard failure and fall back
+            if (!price) {
+              price = await this.fetchYahooFallbackPrice(symbol, ETF_PROXY_URL);
             }
           }
 
@@ -158,6 +200,31 @@ class UsdStocksCalculationService {
     }
   }
 
+  // Fallback quote source when Finnhub fails or returns no price for a
+  // regular US-stock symbol. Reuses the same Cloudflare Worker proxy already
+  // deployed for ETF pricing above (Yahoo's endpoint doesn't send CORS
+  // headers for direct browser calls, so it has to go through that proxy).
+  // Response shape matches worker.js's payload: { symbol, price, currency, ... }.
+  static async fetchYahooFallbackPrice(symbol, proxyUrl) {
+    if (!proxyUrl) {
+      console.warn(`No VITE_ETF_PROXY_URL configured, skipping Yahoo fallback for ${symbol}`);
+      return 0;
+    }
+
+    try {
+      const apiRes = await fetch(`${proxyUrl}?symbol=${encodeURIComponent(symbol)}`);
+      if (!apiRes.ok) {
+        console.warn(`ETF proxy returned ${apiRes.status} for Yahoo fallback on ${symbol}`);
+        return 0;
+      }
+      const apiData = await apiRes.json();
+      return Number(apiData?.price) || 0;
+    } catch (error) {
+      console.error(`Yahoo fallback failed for ${symbol}:`, error);
+      return 0;
+    }
+  }
+
   static processStocksData(transactions, stockPrices, eurUsdRate) {
     const stockMap = new Map();
 
@@ -165,11 +232,24 @@ class UsdStocksCalculationService {
       const symbol = transaction.Symbol;
       const qty = parseFloat(transaction.Quantity) || 0;
       const isEtheeur = symbol === 'ETHEEUR';
-      const conversionRate = isEtheeur ? eurUsdRate : 1;
+      // EUR-traded stocks (see EUR_TRADED_STOCKS) get the same trade-amount
+      // conversion as ETHEEUR.
+      const conversionRate = (isEtheeur || this.EUR_TRADED_STOCKS.includes(symbol)) ? eurUsdRate : 1;
 
-      // Convert amounts for ETHEEUR transactions
-      const investedAmount = (parseFloat(transaction.TradeMoney) || 0) * conversionRate;
-      const ibCommission = (parseFloat(transaction.IBCommission) || 0) * conversionRate;
+      // Convert amounts for ETHEEUR transactions.
+      // NetCash (not TradeMoney) is used here because it's the field that
+      // already carries the correct cash-flow sign - negative for a buy,
+      // positive for a sell - and already nets IBCommission into it. Same
+      // field calculateXIRR below relies on for the same reason.
+      // TradeMoney = Quantity * TradePrice, so it's positive for a buy and
+      // negative for a sell (it follows Quantity's sign, not cash flow),
+      // which is why building cost basis from it broke on any symbol with a
+      // sell in its history.
+      const netCash = (parseFloat(transaction.NetCash) || 0) * conversionRate;
+      // Commission is always a cost - kept here only as an informational
+      // running total (shown in the UI); it's not used in the cost-basis
+      // math below since NetCash already nets it in.
+      const ibCommission = Math.abs(parseFloat(transaction.IBCommission) || 0) * conversionRate;
       const fifoPnlRealized = (parseFloat(transaction.FifoPnlRealized) || 0) * conversionRate;
 
       if (!stockMap.has(symbol)) {
@@ -177,7 +257,7 @@ class UsdStocksCalculationService {
           symbol,
           companyName: transaction.Description || 'No Description',
           totalQuantity: 0,
-          totalAmount: 0,
+          totalNetCash: 0,
           totalIbCommission: 0,
           totalFifoPnlRealized: 0,
           averageUnitPrice: 0,
@@ -188,14 +268,18 @@ class UsdStocksCalculationService {
       const stockData = stockMap.get(symbol);
       stockData.rows.push(transaction);
       stockData.totalQuantity += qty;
-      stockData.totalAmount += investedAmount;
+      stockData.totalNetCash += netCash;
       stockData.totalIbCommission += ibCommission;
       stockData.totalFifoPnlRealized += fifoPnlRealized;
 
+      // Cost basis of shares still held: gross cash paid out so far
+      // (-totalNetCash), with the FIFO-realized portion of any sells added
+      // back in - that part of the cash received back was a gain, not a
+      // return of principal, so it shouldn't shrink the remaining basis.
+      const remainingCostBasis = -stockData.totalNetCash + stockData.totalFifoPnlRealized;
+
       if (stockData.totalQuantity > 0) {
-        stockData.averageUnitPrice =
-          (Math.abs(stockData.totalAmount) + stockData.totalIbCommission) /
-          stockData.totalQuantity;
+        stockData.averageUnitPrice = remainingCostBasis / stockData.totalQuantity;
       }
     });
 
@@ -204,9 +288,14 @@ class UsdStocksCalculationService {
       .map(stock => {
         const currentPrice = stockPrices[stock.symbol] || 0;
         const totalMarketValue = currentPrice * stock.totalQuantity;
-        const unrealizedGains = totalMarketValue - stock.totalIbCommission - Math.abs(stock.totalAmount);
+
+        const remainingCostBasis = -stock.totalNetCash + stock.totalFifoPnlRealized;
+        const unrealizedGains = totalMarketValue - remainingCostBasis;
+        // Realized P&L is layered on top of the unrealized gain on the
+        // shares still held, not on top of a cost basis that already
+        // implicitly contains it - see remainingCostBasis above.
         const profitLoss = unrealizedGains + stock.totalFifoPnlRealized;
-        const netInvestment = Math.abs(stock.totalAmount) + Math.abs(stock.totalIbCommission);
+        const netInvestment = remainingCostBasis;
         const profitLossPercent = netInvestment > 0 ? (profitLoss / netInvestment) * 100 : 0;
         const xirrPercent = this.calculateXIRR(stock.rows, totalMarketValue) * 100;
 
